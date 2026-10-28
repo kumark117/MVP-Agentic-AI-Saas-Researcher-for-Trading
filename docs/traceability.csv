@@ -12,15 +12,15 @@ R010,in,application.auth; repositories.sessions,GET /me/sessions,backend/tests/i
 R011,partial,application.auth,GET /me/sessions; DELETE /me/sessions/{id}; POST /auth/logout-all,backend/tests/integration/test_auth_api.py (session inventory; revoke one/all; expiry),P2; privileged 8 h sessions + MFA deferred (DV-02)
 R012,in,api middleware (AccountContext); repositories (RLS),all private routes and SSE,backend/tests/integration/test_rls.py; backend/tests/integration/test_auth_api.py::test_cannot_touch_another_accounts_session,P1 RLS; P2 context; P5 SSE 15 s revocation close
 R013,partial,security; application.auth,POST /auth/reauthenticate,backend/tests/integration/test_auth_api.py (enumeration; CSRF; reauth; rate limit; hashed tokens),P2; admin-MFA part deferred (DV-02)
-R014,in,application.catalog; cli catalog verify,GET /catalog/instruments,seed: backend/src/alloyiq/cli/seed.py; domain/catalog.py,P3; disabled combinations carry reasons
-R015,in,domain (Instrument); repositories.instruments,GET /catalog/instruments,,P1 schema; P3 data
-R016,in,tools envelope; security validators,tool.completed,,P3/P6
-R017,in,application.catalog; adapters,GET /catalog/instruments,,P3; all MVP instruments data_mode=reference (DV-11)
+R014,in,application.catalog; cli catalog verify,GET /catalog/instruments,seed: backend/src/alloyiq/cli/seed.py; domain/catalog.py; backend/tests/unit/test_market_domain.py; tests/integration/test_tools.py::test_catalog_routes,P3; disabled combinations carry reasons
+R015,in,domain (Instrument); repositories.instruments,GET /catalog/instruments,backend/tests/integration/test_tools.py::test_reference_series_rules,P1 schema; P3 data
+R016,in,tools envelope; security validators,tool.completed,backend/tests/integration/test_tools.py (envelope; freshness; unit mismatch),P3/P6
+R017,in,application.catalog; adapters,GET /catalog/instruments,backend/tests/integration/test_tools.py::test_catalog_verifier; ADR-013,P3; all MVP instruments data_mode=reference (DV-11)
 R018,in,application.research (estimate),POST /research/estimates,,P5
 R019,in,application.research (admit),POST /research/runs,,P5; idempotency + atomic admission
 R020,in,application.research; worker,POST /research/runs; run.queued,,P5
 R021,in,workflows; agents,node.started; tool.completed,,P6
-R022,in,indicators; workflows (evidence_minimum_gate),get_technical_indicators,,P3 indicators; P6 gate
+R022,in,indicators; workflows (evidence_minimum_gate),get_technical_indicators,backend/tests/unit/test_indicators.py; test_tools.py::test_indicators_are_computed_server_side,P3 indicators; P6 gate
 R023,in,application.budget; adapters.AnthropicLLMGateway,limits in estimate,,P5/P6
 R024,in,domain (run state machine),run.* events; GET /research/runs/{id},,P5
 R025,in,application.research (cancel); worker,POST /research/runs/{id}/cancel; run.cancel_requested,,P5
@@ -47,15 +47,15 @@ R045,in,stats; application.reports,GET /reports/summary,,P8
 R046,in,stats (percentiles),GET /reports/summary,,P8; percentile_cont; null on empty; warn below 100
 R047,in,stats (success rate),GET /reports/summary,,P8
 R048,in,application.reports,GET /reports/summary,,P8; 90-day sync cap; 30 s cache; window basis per metric
-R049,in,security; api schemas; tools,all boundaries,backend/tests/unit/test_money_schema.py; tests/contract/test_contracts.py,P1-P6
+R049,in,security; api schemas; tools,all boundaries,backend/tests/unit/test_money_schema.py; tests/contract/test_contracts.py; backend/tests/integration/test_tools.py::test_bad_arguments_never_reach_providers,P1-P6
 R050,in,security (taint); agents prompts,,,P6
 R051,in,security validators; workflows (handoff_validation),validation.completed,,P6; injection + unit-mix fixtures
-R052,in,mcp_server; security (egress),,,P3
+R052,in,mcp_server; security (egress),,backend/tests/unit/test_egress.py; test_tools.py::test_mcp_rejects_missing_or_wrong_token,P3
 R053,in,observability; repositories (audit_events),,backend/tests/integration/test_db_invariants.py (immutable audit/ledger),P1 tables; P2 onward audit writes
 R054,partial,worker (purge); application.deletion,POST /me/deletion-requests,backend/tests/integration/test_schema.py::test_every_table_documents_a_retention_class,P9; third-party trace deletion deferred (DV-10)
 R055,partial,docs/ops,,,P9; restore drills deferred (DV-10)
 R056,in,worker (leases; fencing; recovery sweeper),,,P5
-R057,in,adapters (deadlines; retries; circuit breakers),,,P3/P6
+R057,in,adapters (deadlines; retries; circuit breakers),,backend/tests/integration/test_tools.py::test_timeout_and_retries,P3/P6
 R058,partial,observability (TraceSink; LangSmith),,,P6; gap flag when no key (DV-09)
 R059,deferred,docs/ops,,,DV-06; runbook-lite in P9
 R060,deferred,docs/ops,,,DV-06

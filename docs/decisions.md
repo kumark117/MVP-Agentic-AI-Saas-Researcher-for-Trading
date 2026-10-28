@@ -185,6 +185,47 @@ avoids a Google fetch at build and dev time and keeps the strict CSP planned for
   in-process limiter takes over (never fail open).
 - `Cache-Control: no-store` is on every API response.
 
+## ADR-013 Providers, egress and MCP tools (accepted, P3)
+
+- **Egress:** every adapter except yfinance uses `SafeHttpClient`. It allows HTTPS to an
+  exact host allowlist only (Alpha Vantage, Tavily, Anthropic, LangSmith), with no IP
+  literals and no credentials in URLs. Every resolved address must be public, which blocks
+  private, loopback, link-local, CGNAT, metadata, multicast and documentation ranges.
+  Redirects are re-validated hop by hop (max 3) and bodies are capped at 2 MB. There is a
+  small window between the DNS check and the connection that DNS rebinding could exploit;
+  a production deployment should add an egress proxy (OD-5).
+- **yfinance** has its own HTTP stack (curl_cffi), so its traffic is *not* routed through
+  `SafeHttpClient`. It is dev-only (ADR-006) and runs only with `ENABLE_YAHOO_REFERENCE=1`.
+  Only the symbols GC=F, SI=F and HG=F are accepted, and the symbol comes from
+  `provider_mappings`, never from model or browser input. This is another reason it is a
+  pre-launch blocker (OD-1).
+- **Tools** take catalogue instrument IDs only, plus an optional `focus` string limited to
+  letters and punctuation. The news query is built on the server. Each tool has an 8 s
+  deadline and at most two jittered retries for transient read errors. Provider output is
+  validated (unit and currency must match the instrument, prices within plausible bounds,
+  no future timestamps, OHLC consistency) before a `ToolEnvelope` with a SHA-256
+  provenance hash is built. Failures return a typed error and `data: null`.
+- **Indicators** are computed on the server by `alloyiq.indicators.core`, using
+  conventions documented in the module, from validated bars. Indicators that lack enough
+  history are listed under `missing` with the reason, never filled in.
+- **MCP:** official SDK 2.3 `MCPServer`, stateless Streamable HTTP with JSON responses at
+  `/mcp`, and DNS-rebinding protection limited to `mcp:8100`. Access requires a
+  constant-time `Bearer MCP_SERVICE_TOKEN` and `X-MCP-Audience: alloyiq-tools`. Only the
+  five read-only tools exist. The gateway re-validates every envelope: schema, tool name,
+  `tool_call_id` echo, and status/error consistency.
+- **Cache:** optional Redis cache for public market data only, keyed by instrument,
+  provider, interval and freshness bucket, so an entry is never served past its policy.
+  A Redis failure counts as a cache miss.
+- **Provider mode:** `PROVIDER_MODE=fixtures` serves clearly labelled SYNTHETIC data
+  (sources `synthetic-*`, URLs at `fixtures.alloyiq.invalid`), so the app can be tried
+  without keys. It is refused when `APP_ENV=prod`, and `catalog-verify --apply` refuses to
+  enable instruments from fixture results.
+- **Catalogue verification** (`alloyiq-admin catalog-verify --live --apply`) calls all four
+  instrument tools for every supported horizon and enables an instrument only if every
+  check passes, recording the evidence. It makes real provider calls, so it needs
+  `--live` **and** `LIVE_PROVIDER_TESTS=1`. It has **not** been run: no keys were supplied,
+  so all instruments remain disabled.
+
 ---
 
 # Open decisions (owner input needed; do not invent answers)

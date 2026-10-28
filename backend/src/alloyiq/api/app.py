@@ -18,6 +18,7 @@ from alloyiq.api.errors import install_error_handlers
 from alloyiq.api.health import ReadinessProbe, build_health_router
 from alloyiq.api.middleware import RequestContextMiddleware
 from alloyiq.api.routes import auth as auth_routes
+from alloyiq.api.routes import catalog as catalog_routes
 from alloyiq.api.routes import me as me_routes
 from alloyiq.config import Settings, get_settings
 from alloyiq.observability.logging import configure_logging
@@ -62,5 +63,6 @@ def create_app(
     v1.include_router(build_health_router(readiness_probe))
     v1.include_router(auth_routes.router)
     v1.include_router(me_routes.router)
+    v1.include_router(catalog_routes.router)
     app.include_router(v1)
     return app

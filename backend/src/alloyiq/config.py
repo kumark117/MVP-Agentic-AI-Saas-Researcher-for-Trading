@@ -44,6 +44,15 @@ class Settings(BaseSettings):
     mcp_port: int = 8100
     mcp_url: str = "http://mcp:8100/mcp"
     mcp_service_token: SecretStr = SecretStr("dev-mcp-token-change-me")
+    mcp_allowed_hosts: list[str] = ["mcp:8100", "localhost:8100", "127.0.0.1:8100"]
+
+    # Data providers. "fixtures" serves SYNTHETIC data only (tests, demos without keys);
+    # it is refused in prod.
+    provider_mode: Literal["live", "fixtures"] = "live"
+    alphavantage_api_key: SecretStr | None = None
+    tavily_api_key: SecretStr | None = None
+    enable_yahoo_reference: bool = False
+    anthropic_api_key: SecretStr | None = None
 
     # Real-money guards (REAL USD) and demo assumptions (simulated INR); see .env.example.
     real_spend_per_run_usd: Decimal = Decimal("1.50")
@@ -71,6 +80,10 @@ class Settings(BaseSettings):
     def check(self) -> None:
         if self.is_prod and self.session_secret.get_secret_value() == _DEV_SECRET:
             raise RuntimeError("SESSION_SECRET must be set in production")
+        if self.is_prod and self.provider_mode == "fixtures":
+            raise RuntimeError(
+                "PROVIDER_MODE=fixtures (synthetic data) is not allowed in production"
+            )
 
 
 @lru_cache(maxsize=1)
@@ -78,3 +91,9 @@ def get_settings() -> Settings:
     s = Settings()
     s.check()
     return s
+
+
+def secret_or_none(value: SecretStr | None) -> str | None:
+    """An empty env var (KEY=) means "not configured"; a SecretStr object is always truthy."""
+    raw = value.get_secret_value().strip() if value is not None else ""
+    return raw or None

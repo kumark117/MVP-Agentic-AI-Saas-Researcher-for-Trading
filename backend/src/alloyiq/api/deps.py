@@ -15,6 +15,7 @@ import structlog
 from fastapi import Depends, Request, Response
 
 from alloyiq.application.auth import AuthService, ClientInfo
+from alloyiq.application.catalog import CatalogService
 from alloyiq.config import Settings
 from alloyiq.domain.errors import DomainError, ErrorCode
 from alloyiq.domain.identity import SESSION_ABSOLUTE, AccountContext
@@ -53,13 +54,15 @@ def build_services(
         )
     )
     auth = AuthService(db, passwords, limiter, public_origin=settings.public_origin)
-    return Services(
+    svc = Services(
         settings=settings,
         db=db,
         limiter=limiter,
         csrf=CsrfTokens(settings.session_secret.get_secret_value()),
         auth=auth,
     )
+    svc.extra["catalog"] = CatalogService(db)
+    return svc
 
 
 def services(request: Request) -> Services:

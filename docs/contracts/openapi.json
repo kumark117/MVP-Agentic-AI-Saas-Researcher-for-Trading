@@ -605,6 +605,144 @@
           }
         }
       }
+    },
+    "/api/v1/catalog/instruments": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Instruments",
+        "operationId": "instruments_api_v1_catalog_instruments_get",
+        "parameters": [
+          {
+            "name": "metal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Metal"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exchange"
+            }
+          },
+          {
+            "name": "available_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Available Only"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Catalog_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/catalog/models": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Models",
+        "operationId": "models_api_v1_catalog_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_list_ModelProfile__"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/catalog/prices": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Prices",
+        "operationId": "prices_api_v1_catalog_prices_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Union_RateCard__NoneType__"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/catalog/plans": {
+      "get": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Plans",
+        "operationId": "plans_api_v1_catalog_plans_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_list_Plan__"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -804,23 +942,23 @@
             "items": {
               "$ref": "#/components/schemas/Instrument"
             },
-            "title": "Instruments",
-            "type": "array"
+            "type": "array",
+            "title": "Instruments"
           },
           "unavailable": {
             "items": {
               "$ref": "#/components/schemas/UnavailableCombination"
             },
-            "title": "Unavailable",
-            "type": "array"
+            "type": "array",
+            "title": "Unavailable"
           }
         },
+        "type": "object",
         "required": [
           "instruments",
           "unavailable"
         ],
-        "title": "Catalog",
-        "type": "object"
+        "title": "Catalog"
       },
       "ChangePasswordRequest": {
         "properties": {
@@ -1269,6 +1407,22 @@
         ],
         "title": "EmailRequest"
       },
+      "Envelope_Catalog_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Catalog"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Catalog]"
+      },
       "Envelope_CsrfToken_": {
         "properties": {
           "data": {
@@ -1477,6 +1631,29 @@
         ],
         "title": "Envelope[Revoked]"
       },
+      "Envelope_Union_RateCard__NoneType__": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RateCard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Union[RateCard, NoneType]]"
+      },
       "Envelope_Verified_": {
         "properties": {
           "data": {
@@ -1492,6 +1669,46 @@
           "meta"
         ],
         "title": "Envelope[Verified]"
+      },
+      "Envelope_list_ModelProfile__": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ModelProfile"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[list[ModelProfile]]"
+      },
+      "Envelope_list_Plan__": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Plan"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[list[Plan]]"
       },
       "Estimate": {
         "properties": {
@@ -1879,20 +2096,20 @@
             "additionalProperties": {
               "type": "integer"
             },
-            "title": "Max Quote Age S",
-            "type": "object"
+            "type": "object",
+            "title": "Max Quote Age S"
           },
           "expected_delay": {
-            "title": "Expected Delay",
-            "type": "string"
+            "type": "string",
+            "title": "Expected Delay"
           }
         },
+        "type": "object",
         "required": [
           "max_quote_age_s",
           "expected_delay"
         ],
-        "title": "FreshnessPolicy",
-        "type": "object"
+        "title": "FreshnessPolicy"
       },
       "GenericAccepted": {
         "properties": {
@@ -1942,54 +2159,54 @@
       "Instrument": {
         "properties": {
           "instrument_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Instrument Id",
-            "type": "string"
+            "title": "Instrument Id"
           },
           "canonical_id": {
-            "title": "Canonical Id",
-            "type": "string"
+            "type": "string",
+            "title": "Canonical Id"
           },
           "display_name": {
-            "title": "Display Name",
-            "type": "string"
+            "type": "string",
+            "title": "Display Name"
           },
           "metal": {
-            "title": "Metal",
-            "type": "string"
+            "type": "string",
+            "title": "Metal"
           },
           "venue": {
-            "title": "Venue",
-            "type": "string"
+            "type": "string",
+            "title": "Venue"
           },
           "data_mode": {
+            "type": "string",
             "enum": [
               "exchange_live",
               "exchange_delayed",
               "reference"
             ],
-            "title": "Data Mode",
-            "type": "string"
+            "title": "Data Mode"
           },
           "data_mode_label": {
-            "title": "Data Mode Label",
-            "type": "string"
+            "type": "string",
+            "title": "Data Mode Label"
           },
           "instrument_type": {
+            "type": "string",
             "enum": [
               "spot",
               "futures_contract",
               "futures_continuous",
               "reference_series"
             ],
-            "title": "Instrument Type",
-            "type": "string"
+            "title": "Instrument Type"
           },
           "contract_expiry": {
             "anyOf": [
               {
-                "format": "date",
-                "type": "string"
+                "type": "string",
+                "format": "date"
               },
               {
                 "type": "null"
@@ -1998,35 +2215,35 @@
             "title": "Contract Expiry"
           },
           "quote_currency": {
-            "title": "Quote Currency",
-            "type": "string"
+            "type": "string",
+            "title": "Quote Currency"
           },
           "unit": {
-            "title": "Unit",
-            "type": "string"
+            "type": "string",
+            "title": "Unit"
           },
           "timezone": {
-            "title": "Timezone",
-            "type": "string"
+            "type": "string",
+            "title": "Timezone"
           },
           "supported_horizons": {
             "items": {
+              "type": "string",
               "enum": [
                 "intraday",
                 "swing",
                 "long_term"
-              ],
-              "type": "string"
+              ]
             },
-            "title": "Supported Horizons",
-            "type": "array"
+            "type": "array",
+            "title": "Supported Horizons"
           },
           "freshness_policy": {
             "$ref": "#/components/schemas/FreshnessPolicy"
           },
           "enabled": {
-            "title": "Enabled",
-            "type": "boolean"
+            "type": "boolean",
+            "title": "Enabled"
           },
           "unavailable_reason": {
             "anyOf": [
@@ -2040,6 +2257,7 @@
             "title": "Unavailable Reason"
           }
         },
+        "type": "object",
         "required": [
           "instrument_id",
           "canonical_id",
@@ -2058,8 +2276,7 @@
           "enabled",
           "unavailable_reason"
         ],
-        "title": "Instrument",
-        "type": "object"
+        "title": "Instrument"
       },
       "Latency": {
         "properties": {
@@ -2465,64 +2682,64 @@
       "ModelProfile": {
         "properties": {
           "model_profile_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Model Profile Id",
-            "type": "string"
+            "title": "Model Profile Id"
           },
           "slug": {
-            "title": "Slug",
-            "type": "string"
+            "type": "string",
+            "title": "Slug"
           },
           "display_name": {
-            "title": "Display Name",
-            "type": "string"
+            "type": "string",
+            "title": "Display Name"
           },
           "provider": {
+            "type": "string",
             "const": "anthropic",
-            "title": "Provider",
-            "type": "string"
+            "title": "Provider"
           },
           "primary_model_id": {
-            "title": "Primary Model Id",
-            "type": "string"
+            "type": "string",
+            "title": "Primary Model Id"
           },
           "approved_fallback_model_ids": {
             "items": {
               "type": "string"
             },
-            "title": "Approved Fallback Model Ids",
-            "type": "array"
+            "type": "array",
+            "title": "Approved Fallback Model Ids"
           },
           "fallback_policy": {
-            "title": "Fallback Policy",
-            "type": "string"
+            "type": "string",
+            "title": "Fallback Policy"
           },
           "branch_effort": {
-            "title": "Branch Effort",
-            "type": "string"
+            "type": "string",
+            "title": "Branch Effort"
           },
           "signal_effort": {
-            "title": "Signal Effort",
-            "type": "string"
+            "type": "string",
+            "title": "Signal Effort"
           },
           "context_limit_tokens": {
-            "title": "Context Limit Tokens",
-            "type": "integer"
+            "type": "integer",
+            "title": "Context Limit Tokens"
           },
           "run_input_token_budget": {
-            "title": "Run Input Token Budget",
-            "type": "integer"
+            "type": "integer",
+            "title": "Run Input Token Budget"
           },
           "run_output_token_budget": {
-            "title": "Run Output Token Budget",
-            "type": "integer"
+            "type": "integer",
+            "title": "Run Output Token Budget"
           },
           "max_tokens": {
             "additionalProperties": {
               "type": "integer"
             },
-            "title": "Max Tokens",
-            "type": "object"
+            "type": "object",
+            "title": "Max Tokens"
           },
           "limits": {
             "$ref": "#/components/schemas/RunLimits"
@@ -2539,10 +2756,11 @@
             "title": "Rate Card Version"
           },
           "is_default": {
-            "title": "Is Default",
-            "type": "boolean"
+            "type": "boolean",
+            "title": "Is Default"
           }
         },
+        "type": "object",
         "required": [
           "model_profile_id",
           "slug",
@@ -2561,8 +2779,7 @@
           "rate_card_version",
           "is_default"
         ],
-        "title": "ModelProfile",
-        "type": "object"
+        "title": "ModelProfile"
       },
       "ModelRow": {
         "properties": {
@@ -2655,31 +2872,31 @@
         "type": "object"
       },
       "Money": {
-        "additionalProperties": false,
         "properties": {
           "currency": {
+            "type": "string",
             "enum": [
               "INR",
               "USD"
             ],
-            "title": "Currency",
-            "type": "string"
+            "title": "Currency"
           },
           "amount": {
-            "examples": [
-              "25.00"
-            ],
+            "type": "string",
             "pattern": "^-?\\d{1,14}(\\.\\d{1,6})?$",
             "title": "Amount",
-            "type": "string"
+            "examples": [
+              "25.00"
+            ]
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "currency",
           "amount"
         ],
-        "title": "Money",
-        "type": "object"
+        "title": "Money"
       },
       "Page_SessionInfo_": {
         "properties": {
@@ -2730,29 +2947,29 @@
       "Plan": {
         "properties": {
           "plan_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Plan Id",
-            "type": "string"
+            "title": "Plan Id"
           },
           "slug": {
-            "title": "Slug",
-            "type": "string"
+            "type": "string",
+            "title": "Slug"
           },
           "display_name": {
-            "title": "Display Name",
-            "type": "string"
+            "type": "string",
+            "title": "Display Name"
           },
           "active_runs": {
-            "title": "Active Runs",
-            "type": "integer"
+            "type": "integer",
+            "title": "Active Runs"
           },
           "queued_runs": {
-            "title": "Queued Runs",
-            "type": "integer"
+            "type": "integer",
+            "title": "Queued Runs"
           },
           "sse_streams": {
-            "title": "Sse Streams",
-            "type": "integer"
+            "type": "integer",
+            "title": "Sse Streams"
           },
           "daily_topup_limit": {
             "$ref": "#/components/schemas/Money"
@@ -2761,10 +2978,11 @@
             "$ref": "#/components/schemas/Money"
           },
           "note": {
-            "title": "Note",
-            "type": "string"
+            "type": "string",
+            "title": "Note"
           }
         },
+        "type": "object",
         "required": [
           "plan_id",
           "slug",
@@ -2776,8 +2994,7 @@
           "fixed_fee",
           "note"
         ],
-        "title": "Plan",
-        "type": "object"
+        "title": "Plan"
       },
       "Preferences": {
         "properties": {
@@ -2866,23 +3083,23 @@
       "RateCard": {
         "properties": {
           "version": {
-            "title": "Version",
-            "type": "string"
+            "type": "string",
+            "title": "Version"
           },
           "status": {
+            "type": "string",
             "enum": [
               "draft",
               "active",
               "retired"
             ],
-            "title": "Status",
-            "type": "string"
+            "title": "Status"
           },
           "effective_from": {
             "anyOf": [
               {
-                "format": "date-time",
-                "type": "string"
+                "type": "string",
+                "format": "date-time"
               },
               {
                 "type": "null"
@@ -2893,8 +3110,8 @@
           "effective_to": {
             "anyOf": [
               {
-                "format": "date-time",
-                "type": "string"
+                "type": "string",
+                "format": "date-time"
               },
               {
                 "type": "null"
@@ -2903,29 +3120,30 @@
             "title": "Effective To"
           },
           "demo_fx_usd_inr": {
-            "title": "Demo Fx Usd Inr",
-            "type": "string"
+            "type": "string",
+            "title": "Demo Fx Usd Inr"
           },
           "demo_markup": {
-            "title": "Demo Markup",
-            "type": "string"
+            "type": "string",
+            "title": "Demo Markup"
           },
           "fx_rule": {
-            "title": "Fx Rule",
-            "type": "string"
+            "type": "string",
+            "title": "Fx Rule"
           },
           "note": {
-            "title": "Note",
-            "type": "string"
+            "type": "string",
+            "title": "Note"
           },
           "items": {
             "items": {
               "$ref": "#/components/schemas/RateItem"
             },
-            "title": "Items",
-            "type": "array"
+            "type": "array",
+            "title": "Items"
           }
         },
+        "type": "object",
         "required": [
           "version",
           "status",
@@ -2937,24 +3155,23 @@
           "note",
           "items"
         ],
-        "title": "RateCard",
-        "type": "object"
+        "title": "RateCard"
       },
       "RateItem": {
         "properties": {
           "model_id": {
-            "title": "Model Id",
-            "type": "string"
+            "type": "string",
+            "title": "Model Id"
           },
           "token_category": {
+            "type": "string",
             "enum": [
               "input",
               "output",
               "cache_read",
               "cache_write"
             ],
-            "title": "Token Category",
-            "type": "string"
+            "title": "Token Category"
           },
           "provider_usd_per_mtok": {
             "anyOf": [
@@ -2977,10 +3194,11 @@
             ]
           },
           "verified": {
-            "title": "Verified",
-            "type": "boolean"
+            "type": "boolean",
+            "title": "Verified"
           }
         },
+        "type": "object",
         "required": [
           "model_id",
           "token_category",
@@ -2988,8 +3206,7 @@
           "customer_inr_per_mtok_simulated",
           "verified"
         ],
-        "title": "RateItem",
-        "type": "object"
+        "title": "RateItem"
       },
       "ReauthenticateRequest": {
         "properties": {
@@ -3521,30 +3738,31 @@
       "RunLimits": {
         "properties": {
           "run_model_calls": {
-            "title": "Run Model Calls",
-            "type": "integer"
+            "type": "integer",
+            "title": "Run Model Calls"
           },
           "run_tool_calls": {
-            "title": "Run Tool Calls",
-            "type": "integer"
+            "type": "integer",
+            "title": "Run Tool Calls"
           },
           "run_active_seconds": {
-            "title": "Run Active Seconds",
-            "type": "integer"
+            "type": "integer",
+            "title": "Run Active Seconds"
           },
           "branch_model_calls": {
-            "title": "Branch Model Calls",
-            "type": "integer"
+            "type": "integer",
+            "title": "Branch Model Calls"
           },
           "branch_tool_calls": {
-            "title": "Branch Tool Calls",
-            "type": "integer"
+            "type": "integer",
+            "title": "Branch Tool Calls"
           },
           "structured_output_repairs": {
-            "title": "Structured Output Repairs",
-            "type": "integer"
+            "type": "integer",
+            "title": "Structured Output Repairs"
           }
         },
+        "type": "object",
         "required": [
           "run_model_calls",
           "run_tool_calls",
@@ -3553,8 +3771,7 @@
           "branch_tool_calls",
           "structured_output_repairs"
         ],
-        "title": "RunLimits",
-        "type": "object"
+        "title": "RunLimits"
       },
       "RunSnapshot": {
         "properties": {
@@ -4443,25 +4660,25 @@
       "UnavailableCombination": {
         "properties": {
           "metal": {
-            "title": "Metal",
-            "type": "string"
+            "type": "string",
+            "title": "Metal"
           },
           "venue": {
-            "title": "Venue",
-            "type": "string"
+            "type": "string",
+            "title": "Venue"
           },
           "reason": {
-            "title": "Reason",
-            "type": "string"
+            "type": "string",
+            "title": "Reason"
           }
         },
+        "type": "object",
         "required": [
           "metal",
           "venue",
           "reason"
         ],
-        "title": "UnavailableCombination",
-        "type": "object"
+        "title": "UnavailableCombination"
       },
       "UpdateMeRequest": {
         "properties": {

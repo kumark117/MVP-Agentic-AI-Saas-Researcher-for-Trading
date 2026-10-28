@@ -294,6 +294,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/catalog/instruments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Instruments */
+    get: operations["instruments_api_v1_catalog_instruments_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/catalog/models": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Models */
+    get: operations["models_api_v1_catalog_models_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/catalog/prices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Prices */
+    get: operations["prices_api_v1_catalog_prices_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/catalog/plans": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Plans */
+    get: operations["plans_api_v1_catalog_plans_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -590,6 +658,11 @@ export interface components {
        */
       email: string;
     };
+    /** Envelope[Catalog] */
+    Envelope_Catalog_: {
+      data: components["schemas"]["Catalog"];
+      meta: components["schemas"]["Meta"];
+    };
     /** Envelope[CsrfToken] */
     Envelope_CsrfToken_: {
       data: components["schemas"]["CsrfToken"];
@@ -655,9 +728,26 @@ export interface components {
       data: components["schemas"]["Revoked"];
       meta: components["schemas"]["Meta"];
     };
+    /** Envelope[Union[RateCard, NoneType]] */
+    Envelope_Union_RateCard__NoneType__: {
+      data: components["schemas"]["RateCard"] | null;
+      meta: components["schemas"]["Meta"];
+    };
     /** Envelope[Verified] */
     Envelope_Verified_: {
       data: components["schemas"]["Verified"];
+      meta: components["schemas"]["Meta"];
+    };
+    /** Envelope[list[ModelProfile]] */
+    Envelope_list_ModelProfile__: {
+      /** Data */
+      data: components["schemas"]["ModelProfile"][];
+      meta: components["schemas"]["Meta"];
+    };
+    /** Envelope[list[Plan]] */
+    Envelope_list_Plan__: {
+      /** Data */
+      data: components["schemas"]["Plan"][];
       meta: components["schemas"]["Meta"];
     };
     /** Estimate */
@@ -2636,6 +2726,99 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  instruments_api_v1_catalog_instruments_get: {
+    parameters: {
+      query?: {
+        metal?: string | null;
+        exchange?: string | null;
+        available_only?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Catalog_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  models_api_v1_catalog_models_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_list_ModelProfile__"];
+        };
+      };
+    };
+  };
+  prices_api_v1_catalog_prices_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Union_RateCard__NoneType__"];
+        };
+      };
+    };
+  };
+  plans_api_v1_catalog_plans_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_list_Plan__"];
         };
       };
     };

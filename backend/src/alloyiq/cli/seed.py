@@ -66,7 +66,9 @@ PROFILES: list[dict[str, Any]] = [
     },
 ]
 
-UNVERIFIED = "Not yet verified: run `alloyiq-admin catalog verify` (adapter acceptance test)"
+UNVERIFIED = (
+    "Not yet verified: run `alloyiq-admin catalog-verify --live --apply` (adapter acceptance test)"
+)
 
 _FRESH_FUTURES = {
     "max_quote_age_s": {"intraday": 3600, "swing": 4 * 86400, "long_term": 8 * 86400},

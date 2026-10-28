@@ -9,6 +9,8 @@ dependencies = [
     "asyncpg>=0.32.0",
     "email-validator>=2.3.0",
     "fastapi>=0.162.0",
+    "httpx>=0.28.1",
+    "mcp>=2.3.0",
     "psycopg[binary]>=3.3.6",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.16.1",
@@ -16,6 +18,7 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.1.6",
     "structlog>=26.1.0",
     "uvicorn[standard]>=0.54.0",
+    "yfinance>=1.7.0",
 ]
 
 [project.scripts]
@@ -49,7 +52,7 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "RUF"]
 ignore = []
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S105", "S106", "S608", "E501"]
+"tests/**" = ["S101", "S104", "S105", "S106", "S608", "E501", "ASYNC110"]
 "migrations/**" = ["E501", "S608"]
 
 [tool.mypy]
@@ -66,9 +69,9 @@ check_untyped_defs = true
 module = ["alloyiq.domain.*", "alloyiq.application.*"]
 strict = true
 
-# asyncpg ships no type information.
+# asyncpg and yfinance ship no type information.
 [[tool.mypy.overrides]]
-module = ["asyncpg"]
+module = ["asyncpg", "yfinance"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
