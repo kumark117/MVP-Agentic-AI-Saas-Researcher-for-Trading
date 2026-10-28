@@ -144,7 +144,79 @@ export function RunDetail() {
       </div>
       <ReportPanel run={r} report={report.data} error={report.error} terminal={terminal} />
       <UsagePanel usage={usage.data} />
+      {terminal && <FeedbackAndFollowUp runId={r.run_id} />}
     </div>
+  );
+}
+
+function FeedbackAndFollowUp({ runId }: { runId: string }) {
+  const [rating, setRating] = useState<"positive" | "negative" | null>(null);
+  const [comment, setComment] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  async function save(r: "positive" | "negative") {
+    setRating(r);
+    setError(null);
+    try {
+      await call(() =>
+        api.PUT("/api/v1/research/runs/{run_id}/feedback", {
+          params: { path: { run_id: runId } },
+          body: { rating: r, comment: comment.trim() || null },
+        }),
+      );
+      setSaved(true);
+    } catch (e) {
+      setError(e);
+    }
+  }
+  return (
+    <Card title="Feedback and follow-up">
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-medium">Was this report useful?</legend>
+        <label htmlFor="fb-comment" className="text-sm">
+          Comment (optional)
+        </label>
+        <textarea
+          id="fb-comment"
+          rows={2}
+          maxLength={2000}
+          value={comment}
+          className="rounded border border-gray-400 bg-transparent px-3 py-2"
+          onChange={(e) => {
+            setComment(e.target.value);
+            setSaved(false);
+          }}
+        />
+        <div className="flex gap-2">
+          <Button
+            variant={rating === "positive" ? "primary" : "secondary"}
+            aria-pressed={rating === "positive"}
+            onClick={() => void save("positive")}
+          >
+            Useful
+          </Button>
+          <Button
+            variant={rating === "negative" ? "primary" : "secondary"}
+            aria-pressed={rating === "negative"}
+            onClick={() => void save("negative")}
+          >
+            Not useful
+          </Button>
+        </div>
+        {saved && (
+          <p role="status" className="text-sm">
+            Thanks, your feedback was saved.
+          </p>
+        )}
+        <ErrorText error={error} />
+      </fieldset>
+      <p className="mt-3 text-sm">
+        <a className="underline" href={`/research?followup=${runId}`}>
+          Ask a follow-up
+        </a>{" "}
+        (starts a new estimate in this conversation)
+      </p>
+    </Card>
   );
 }
 

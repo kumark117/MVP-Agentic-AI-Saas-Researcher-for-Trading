@@ -89,7 +89,7 @@ export function ResearchForm({
             horizon: horizon as "intraday" | "swing" | "long_term",
             model_profile_id: profileId,
             question: question.trim() || null,
-            conversation_id: followUp?.conversationId ?? null,
+            conversation_id: followUp?.conversationId || null,
           },
         }),
       );

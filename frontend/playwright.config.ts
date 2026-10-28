@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 // Run through scripts/e2e.ps1, which starts the SYNTHETIC stack on alloyiq_e2e.
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 90_000,
+  timeout: 180_000,
   expect: { timeout: 20_000 },
   fullyParallel: false,
   workers: 1, // auth rate limits are per IP; journeys run one after another

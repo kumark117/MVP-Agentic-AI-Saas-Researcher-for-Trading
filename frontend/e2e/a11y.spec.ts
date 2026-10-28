@@ -23,11 +23,15 @@ test("the research form works with the keyboard only", async ({ page }) => {
   const email = await registerAndVerify(page, "kbd");
   await login(page, email);
   const metal = page.getByLabel("Metal");
+  const venue = page.getByLabel("Venue");
+  await expect(metal.locator("option")).not.toHaveCount(1); // catalogue loaded
   await metal.focus();
   await page.keyboard.press("ArrowDown");
+  await expect(venue).toBeEnabled(); // the dependent field unlocks after the choice
   await page.keyboard.press("Tab");
-  await expect(page.getByLabel("Venue")).toBeFocused();
+  await expect(venue).toBeFocused();
   await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("radio").first()).toBeEnabled();
   await page.keyboard.press("Tab");
   await page.keyboard.press("Space"); // select the first instrument radio
   const horizon = page.getByLabel("Horizon");

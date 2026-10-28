@@ -32,7 +32,12 @@ function useAccountStream(enabled: boolean, currentSession: string | undefined) 
       url: "/api/v1/events",
       eventTypes: ACCOUNT_EVENT_TYPES,
       onEvent: (e) => {
-        if (e.type === "balance.updated") void qc.invalidateQueries({ queryKey: keys.balance });
+        if (e.type === "balance.updated") {
+          // A balance change means new journals: refresh the ledger and receipts too.
+          void qc.invalidateQueries({ queryKey: keys.balance });
+          void qc.invalidateQueries({ queryKey: ["ledger"] });
+          void qc.invalidateQueries({ queryKey: keys.receipts });
+        }
         if (e.type === "run.updated") {
           void qc.invalidateQueries({ queryKey: ["runs"] });
           const id = String(e.payload.run_id ?? "");

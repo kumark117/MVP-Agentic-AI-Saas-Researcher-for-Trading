@@ -33,7 +33,15 @@ export async function registerAndVerify(page: Page, tag: string): Promise<string
   await page.getByLabel("Name").fill("E2E Tester");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Create account" }).click();
+  // The API rate-limits registration per IP (5 a minute); back off like a person would.
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await page.getByRole("button", { name: "Create account" }).click();
+    const done = page.getByText("Check your email");
+    const limited = page.getByText("Too many requests");
+    await expect(done.or(limited)).toBeVisible();
+    if (await done.isVisible()) break;
+    await page.waitForTimeout(15_000);
+  }
   await expect(page.getByText("Check your email")).toBeVisible();
   const link = new URL(await latestLink(email, "/verify-email"));
   await page.goto(link.pathname + link.hash);

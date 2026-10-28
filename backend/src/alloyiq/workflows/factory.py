@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -38,22 +37,18 @@ def checkpoint_dsn(sqlalchemy_url: str) -> str:
 
 
 class PostgresCheckpointer:
-    """One AsyncPostgresSaver per run (graph schema; created by migration 0004)."""
+    """One AsyncPostgresSaver per run. The `graph` schema and its tables belong to the
+    migrator (migration 0004); the worker has data access only, so setup() is never
+    called here."""
 
     def __init__(self, dsn: str) -> None:
         self.dsn = dsn
-        self._setup_done = False
-        self._lock = asyncio.Lock()
 
     @asynccontextmanager
     async def __call__(self) -> AsyncIterator[Any]:
         from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
         async with AsyncPostgresSaver.from_conn_string(self.dsn) as saver:
-            async with self._lock:
-                if not self._setup_done:
-                    await saver.setup()  # idempotent; creates checkpoint tables in `graph`
-                    self._setup_done = True
             yield saver
 
 

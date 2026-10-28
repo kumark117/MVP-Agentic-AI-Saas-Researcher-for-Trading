@@ -60,6 +60,9 @@ class ApiClient:
     async def post(self, path: str, json: Any = None, **kw: Any) -> httpx.Response:
         return await self.send("POST", path, json, **kw)
 
+    async def put(self, path: str, json: Any = None, **kw: Any) -> httpx.Response:
+        return await self.send("PUT", path, json, **kw)
+
 
 def new_email() -> str:
     return f"u-{uuid.uuid4().hex[:12]}@example.com"

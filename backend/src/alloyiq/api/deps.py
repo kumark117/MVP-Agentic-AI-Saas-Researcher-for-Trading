@@ -17,13 +17,17 @@ import structlog
 from fastapi import Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from alloyiq.adapters.artifacts import LocalArtifactStore
 from alloyiq.adapters.payments import DummyPaymentProvider
 from alloyiq.adapters.pg_listen import PgListener
 from alloyiq.application.auth import AuthService, ClientInfo
 from alloyiq.application.billing import BillingService
 from alloyiq.application.budget import BudgetService, SpendCaps
 from alloyiq.application.catalog import CatalogService
+from alloyiq.application.exports import ExportService
+from alloyiq.application.history import HistoryService
 from alloyiq.application.lifecycle import RunLifecycle
+from alloyiq.application.reports import ReportService
 from alloyiq.application.research import ResearchService
 from alloyiq.application.settlement import SettlementService
 from alloyiq.application.streams import StreamService
@@ -91,6 +95,13 @@ def build_services(
     lifecycle = RunLifecycle(SettlementService(wallet, budget))
     svc.extra["research"] = ResearchService(
         db, wallet=wallet, budget=budget, lifecycle=lifecycle, limiter=limiter
+    )
+    svc.extra["history"] = HistoryService(db)
+    svc.extra["reports"] = ReportService(db)
+    svc.extra["exports"] = ExportService(
+        db,
+        LocalArtifactStore(settings.artifact_dir),
+        secret=settings.session_secret.get_secret_value(),
     )
     listener = LazyListener(url)
     svc.extra["listener"] = listener

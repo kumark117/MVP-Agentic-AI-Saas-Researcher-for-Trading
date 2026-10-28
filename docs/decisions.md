@@ -432,3 +432,40 @@ From build prompt §21, plus anything found while building.
   user (a new named volume inherits it), and the Next dev server polls for file changes on
   Windows bind mounts (`WATCHPACK_POLLING`).
 - History and Reports screens are placeholders until P8.
+
+## ADR-018 History, reports and exports (accepted, P8)
+
+- **Conversations:** messages are immutable (at most 4,000 characters). A repeated
+  `client_message_id` returns the original message, and the same ID with different content
+  is a 409. Posting a message never starts research. A follow-up is a new estimate carrying
+  `conversation_id`, refused with 409 `INVALID_RUN_STATE` while that conversation has a
+  run that is not terminal. Re-run prefills the earlier settings, but always needs a new
+  estimate.
+- **Feedback:** one rating per user and run, accepted only once the run is terminal.
+  POST creates, and PUT (or a repeated POST) updates the same row.
+- **Reports** (`/reports/summary`, `/reports/models`): exact `percentile_cont` over raw
+  durations. Each latency object names its population; an empty population gives null,
+  and fewer than 100 samples raises a warning. Success rate = succeeded / (succeeded +
+  incomplete + failed + timed_out); cancellations and queue expiries (`timed_out` with
+  `outcome_reason=queue_expired`) are reported separately. Window bases are explicit:
+  submissions by `submitted_at`, outcomes by `terminal_at`, money by `posted_at`. Demo
+  charges come from `run_debit` ledger postings, real cost from usage records (calculated,
+  not reconciled; DV-07). The maximum range is 90 days, cached for 30 s per account and
+  process.
+- **Exports:** `POST /exports` (Idempotency-Key) queues a job, and the worker builds it in
+  the member's RLS context (at most 50,000 rows and 366 days) and stores it in the
+  ArtifactStore. `GET /exports/{id}` issues a link signed with HMAC over the export,
+  account and expiry, valid for 15 minutes. Download needs the same account's session
+  *and* a valid signature. Another account's link is a 404, an expired link a 410, and any
+  scheduled account deletion makes every link a 410. CSV cells beginning with
+  `= + - @ \t \r` are prefixed with `'`, with a UTF-8 BOM. Exports contain no prompts,
+  secrets or hidden reasoning.
+- **Checkpoint ownership (fix):** migration 0004 now creates the LangGraph checkpoint
+  tables itself, as the migrator, from a frozen copy of the library's schema (versions
+  0-9). The worker has DML only and no longer calls `setup()`. Previously the worker
+  created and owned the tables, so the migrator could not drop them on downgrade. A
+  library upgrade that adds checkpoint migrations needs a new Alembic revision.
+- **E2E hardening:** the script restarts the Next dev server before the journeys, flushes
+  the Redis rate-limit buckets (Redis holds nothing durable, ADR-005), and the helpers
+  back off when the API's registration rate limit answers 429. A balance event now also
+  refreshes the ledger and receipts.

@@ -37,3 +37,6 @@ Thumbs.db
 
 # contract check scratch file
 frontend/src/lib/api/.schema.check.d.ts
+
+# Local ArtifactStore when running outside containers
+backend/data/

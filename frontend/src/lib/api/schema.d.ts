@@ -652,6 +652,145 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/conversations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Conversations */
+    get: operations["list_conversations_api_v1_conversations_get"];
+    put?: never;
+    /** Create Conversation */
+    post: operations["create_conversation_api_v1_conversations_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/conversations/{conversation_id}/messages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Messages */
+    get: operations["list_messages_api_v1_conversations__conversation_id__messages_get"];
+    put?: never;
+    /** Post Message */
+    post: operations["post_message_api_v1_conversations__conversation_id__messages_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/research/runs/{run_id}/feedback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update Feedback */
+    put: operations["update_feedback_api_v1_research_runs__run_id__feedback_put"];
+    /** Create Feedback */
+    post: operations["create_feedback_api_v1_research_runs__run_id__feedback_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reports/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Summary */
+    get: operations["summary_api_v1_reports_summary_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reports/models": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Models Report */
+    get: operations["models_report_api_v1_reports_models_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/exports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Export */
+    post: operations["create_export_api_v1_exports_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/exports/{export_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Export */
+    get: operations["get_export_api_v1_exports__export_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/exports/{export_id}/download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Download Export */
+    get: operations["download_export_api_v1_exports__export_id__download_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -876,11 +1015,8 @@ export interface components {
     };
     /** CreateConversationRequest */
     CreateConversationRequest: {
-      /**
-       * Title
-       * @default null
-       */
-      title: string | null;
+      /** Title */
+      title?: string | null;
     };
     /** CreateMessageRequest */
     CreateMessageRequest: {
@@ -960,6 +1096,11 @@ export interface components {
       data: components["schemas"]["Checkout"];
       meta: components["schemas"]["Meta"];
     };
+    /** Envelope[Conversation] */
+    Envelope_Conversation_: {
+      data: components["schemas"]["Conversation"];
+      meta: components["schemas"]["Meta"];
+    };
     /** Envelope[CsrfToken] */
     Envelope_CsrfToken_: {
       data: components["schemas"]["CsrfToken"];
@@ -973,6 +1114,16 @@ export interface components {
     /** Envelope[Estimate] */
     Envelope_Estimate_: {
       data: components["schemas"]["Estimate"];
+      meta: components["schemas"]["Meta"];
+    };
+    /** Envelope[ExportJob] */
+    Envelope_ExportJob_: {
+      data: components["schemas"]["ExportJob"];
+      meta: components["schemas"]["Meta"];
+    };
+    /** Envelope[Feedback] */
+    Envelope_Feedback_: {
+      data: components["schemas"]["Feedback"];
       meta: components["schemas"]["Meta"];
     };
     /** Envelope[Fresh] */
@@ -1000,14 +1151,34 @@ export interface components {
       data: components["schemas"]["Me"];
       meta: components["schemas"]["Meta"];
     };
+    /** Envelope[Message] */
+    Envelope_Message_: {
+      data: components["schemas"]["Message"];
+      meta: components["schemas"]["Meta"];
+    };
+    /** Envelope[ModelsReport] */
+    Envelope_ModelsReport_: {
+      data: components["schemas"]["ModelsReport"];
+      meta: components["schemas"]["Meta"];
+    };
     /** Envelope[Page[Activity]] */
     Envelope_Page_Activity__: {
       data: components["schemas"]["Page_Activity_"];
       meta: components["schemas"]["Meta"];
     };
+    /** Envelope[Page[Conversation]] */
+    Envelope_Page_Conversation__: {
+      data: components["schemas"]["Page_Conversation_"];
+      meta: components["schemas"]["Meta"];
+    };
     /** Envelope[Page[LedgerEntry]] */
     Envelope_Page_LedgerEntry__: {
       data: components["schemas"]["Page_LedgerEntry_"];
+      meta: components["schemas"]["Meta"];
+    };
+    /** Envelope[Page[Message]] */
+    Envelope_Page_Message__: {
+      data: components["schemas"]["Page_Message_"];
       meta: components["schemas"]["Meta"];
     };
     /** Envelope[Page[Receipt]] */
@@ -1078,6 +1249,11 @@ export interface components {
     /** Envelope[SimulateAccepted] */
     Envelope_SimulateAccepted_: {
       data: components["schemas"]["SimulateAccepted"];
+      meta: components["schemas"]["Meta"];
+    };
+    /** Envelope[Summary] */
+    Envelope_Summary_: {
+      data: components["schemas"]["Summary"];
       meta: components["schemas"]["Meta"];
     };
     /** Envelope[Union[RateCard, NoneType]] */
@@ -1263,11 +1439,8 @@ export interface components {
        * @enum {string}
        */
       rating: "positive" | "negative";
-      /**
-       * Comment
-       * @default null
-       */
-      comment: string | null;
+      /** Comment */
+      comment?: string | null;
     };
     /** FieldError */
     FieldError: {
@@ -1645,10 +1818,24 @@ export interface components {
       /** Next Cursor */
       next_cursor?: string | null;
     };
+    /** Page[Conversation] */
+    Page_Conversation_: {
+      /** Items */
+      items: components["schemas"]["Conversation"][];
+      /** Next Cursor */
+      next_cursor?: string | null;
+    };
     /** Page[LedgerEntry] */
     Page_LedgerEntry_: {
       /** Items */
       items: components["schemas"]["LedgerEntry"][];
+      /** Next Cursor */
+      next_cursor?: string | null;
+    };
+    /** Page[Message] */
+    Page_Message_: {
+      /** Items */
+      items: components["schemas"]["Message"][];
       /** Next Cursor */
       next_cursor?: string | null;
     };
@@ -3835,6 +4022,378 @@ export interface operations {
         };
         content: {
           "text/event-stream": string;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_conversations_api_v1_conversations_get: {
+    parameters: {
+      query?: {
+        cursor?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Page_Conversation__"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_conversation_api_v1_conversations_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateConversationRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Conversation_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_messages_api_v1_conversations__conversation_id__messages_get: {
+    parameters: {
+      query?: {
+        cursor?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        conversation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Page_Message__"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  post_message_api_v1_conversations__conversation_id__messages_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateMessageRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Message_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_feedback_api_v1_research_runs__run_id__feedback_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        run_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FeedbackRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Feedback_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_feedback_api_v1_research_runs__run_id__feedback_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        run_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FeedbackRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Feedback_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  summary_api_v1_reports_summary_get: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+        instrument_id?: string | null;
+        model_profile_id?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Summary_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  models_report_api_v1_reports_models_get: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_ModelsReport_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_export_api_v1_exports_post: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description UUID; the same key and body replay the original response (D083) */
+        "Idempotency-Key": string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ExportRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_ExportJob_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_export_api_v1_exports__export_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        export_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_ExportJob_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  download_export_api_v1_exports__export_id__download_get: {
+    parameters: {
+      query: {
+        expires: number;
+        sig: string;
+      };
+      header?: never;
+      path: {
+        export_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The export file (CSV or JSON) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/csv": string;
+          "application/json": Record<string, never>;
         };
       };
       /** @description Validation Error */

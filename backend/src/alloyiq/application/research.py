@@ -147,6 +147,22 @@ class ResearchService:
             if conversation_id is not None:
                 if not await self.runs.conversation_exists(conn, conversation_id):
                     raise not_found("Conversation")
+                open_run = (
+                    await conn.execute(
+                        text(
+                            "SELECT 1 FROM research_runs WHERE conversation_id = :c"
+                            " AND terminal_at IS NULL LIMIT 1"
+                        ),
+                        {"c": conversation_id},
+                    )
+                ).first()
+                if open_run:  # R033: a follow-up starts after the previous run is terminal
+                    raise DomainError(
+                        409,
+                        ErrorCode.INVALID_RUN_STATE,
+                        "Previous run still in progress",
+                        "Ask a follow-up once the conversation's current run has finished.",
+                    )
                 cutoff = await self.runs.latest_message_id(conn, conversation_id)
             card_row = await self.catalog.current_rate_card(conn)
             if card_row is None:

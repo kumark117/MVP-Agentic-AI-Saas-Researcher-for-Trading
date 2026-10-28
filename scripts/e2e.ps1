@@ -32,7 +32,11 @@ $failed = $false
 try {
     Write-Step 'Starting the synthetic stack'
     Invoke-Native docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --wait api worker mcp caddy web
+    # A fresh dev server: on Windows bind mounts the file watcher can miss newly created files.
+    Invoke-Native docker compose restart web
     Wait-HttpOk 'http://localhost:8080/api/v1/health/live' 180
+    # Rate-limit buckets live in Redis, which holds nothing durable (ADR-005): start clean.
+    Invoke-Native docker compose exec -T redis redis-cli FLUSHDB
     Wait-HttpOk 'http://localhost:8080/login' 300
 
     Push-Location (Join-Path $RepoRoot 'frontend')

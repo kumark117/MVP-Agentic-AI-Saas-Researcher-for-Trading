@@ -1,4 +1,5 @@
-// Phase 8 builds this screen (history filters and exports / personal reports).
+import { Reports } from "@/features/reports/Reports";
+
 export default function Page() {
-  return <p>This screen arrives in the next build phase.</p>;
+  return <Reports />;
 }

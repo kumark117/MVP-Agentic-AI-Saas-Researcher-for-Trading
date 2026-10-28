@@ -76,3 +76,22 @@ test("revoking a session from a second browser signs the first one out", async (
   await expect(page).toHaveURL(/\/login/, { timeout: 20_000 });
   await second.close();
 });
+
+test("history, re-run, reports and export", async ({ page }) => {
+  const email = await registerAndVerify(page, "history");
+  await login(page, email);
+  await fillResearch(page);
+  await page.getByRole("button", { name: "Start research" }).click();
+  await expect(page.getByText(/Signal: /)).toBeVisible({ timeout: 60_000 });
+  await page.getByRole("link", { name: "History" }).click();
+  await expect(page.getByRole("heading", { name: "History" })).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: "succeeded" })).toHaveCount(1);
+  await page.getByRole("link", { name: "Re-run" }).first().click();
+  await expect(page.getByText(/Re-run: the earlier settings are prefilled/)).toBeVisible();
+  await page.getByRole("link", { name: "Reports" }).click();
+  await expect(page.getByRole("heading", { name: "Latency" })).toBeVisible();
+  await expect(page.getByText(/\(1 of 1\)/)).toBeVisible();
+  await page.getByRole("link", { name: "History" }).click();
+  await page.getByRole("button", { name: "Create export" }).click();
+  await expect(page.getByRole("link", { name: "Download" })).toBeVisible({ timeout: 30_000 });
+});

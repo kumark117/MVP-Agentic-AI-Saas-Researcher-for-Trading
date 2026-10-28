@@ -6,12 +6,14 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
+from alloyiq.adapters.artifacts import LocalArtifactStore
 from alloyiq.adapters.email import SmtpEmailSender
 from alloyiq.adapters.payments import DummyPaymentProvider
 from alloyiq.adapters.pg_listen import PgListener
 from alloyiq.application.billing import BillingService
 from alloyiq.application.budget import BudgetService, SpendCaps
 from alloyiq.application.email_dispatch import EmailDispatcher
+from alloyiq.application.exports import ExportService
 from alloyiq.application.lifecycle import RunLifecycle
 from alloyiq.application.recovery import RecoverySweeper
 from alloyiq.application.settlement import SettlementService
@@ -81,6 +83,11 @@ def build_worker(settings: Settings, worker_id: str) -> WorkerParts:
         concurrency=settings.worker_concurrency,
     )
     sweeper = RecoverySweeper(db, lifecycle)
+    exports = ExportService(
+        db,
+        LocalArtifactStore(settings.artifact_dir),
+        secret=settings.session_secret.get_secret_value(),
+    )
 
     async def jobs(stop: asyncio.Event) -> None:
         await listener.start()
@@ -93,6 +100,7 @@ def build_worker(settings: Settings, worker_id: str) -> WorkerParts:
             ("checkout_expiry", billing.expire_checkouts, 30.0),
             ("pending_hold_release", wallet.release_due_pending, 300.0),
             ("recovery_sweeper", sweeper.sweep, 15.0),
+            ("exports", exports.process_pending, 2.0),
         ],
         daemons=[("jobs", jobs)],
         cleanup=[listener.stop, db.dispose],
