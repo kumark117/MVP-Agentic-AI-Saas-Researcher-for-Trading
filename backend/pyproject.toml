@@ -3,6 +3,10 @@ name = "alloyiq"
 version = "0.0.1"
 description = "AlloyIQ: AI agent SaaS for metals-trading research (MVP)"
 requires-python = ">=3.12,<3.13"
+authors = [
+    { name = "Kumar Krishnamoorthy" },
+    { name = "Claude & Team" },
+]
 dependencies = [
     "alembic>=1.20.1",
     "anthropic>=2.3.0",

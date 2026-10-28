@@ -2,6 +2,10 @@
   "name": "alloyiq-web",
   "version": "0.0.1",
   "private": true,
+  "author": "Kumar Krishnamoorthy",
+  "contributors": [
+    "Claude & Team"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",

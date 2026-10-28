@@ -67,3 +67,10 @@ scripts/    PowerShell helpers: dev, test, migrate, gen-contracts, seed, e2e, ex
 
 Architecture rules: domain code has no I/O; route handlers only call services; no route touches the
 ledger or a model directly; agents cannot run SQL, touch payments or write signals.
+
+## Authors
+
+- **Kumar Krishnamoorthy**: product owner; specifications, decisions and live verification
+- **Claude & Team** (Claude Opus 5.5 by Anthropic, with Claude Code): design and implementation
+
+Every phase commit carries a `Co-Authored-By: Claude Opus 5.5` trailer.
