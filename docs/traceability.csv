@@ -10,9 +10,9 @@ R008,in,application.auth,/auth/register /auth/verify-email /auth/login /auth/log
 R009,deferred,,,,Google OIDC (DV-01); auth_identities table kept
 R010,in,application.auth; repositories.sessions,GET /me/sessions,,P2; multi-device run visibility proven in P5/P7
 R011,partial,application.auth,GET /me/sessions; DELETE /me/sessions/{id}; POST /auth/logout-all,,P2; privileged 8 h sessions + MFA deferred (DV-02)
-R012,in,api middleware (AccountContext); repositories (RLS),all private routes and SSE,,P1 RLS; P2 context; P5 SSE 15 s revocation close
+R012,in,api middleware (AccountContext); repositories (RLS),all private routes and SSE,backend/tests/integration/test_rls.py,P1 RLS; P2 context; P5 SSE 15 s revocation close
 R013,partial,security; application.auth,POST /auth/reauthenticate,,P2; admin-MFA part deferred (DV-02)
-R014,in,application.catalog; cli catalog verify,GET /catalog/instruments,,P3; disabled combinations carry reasons
+R014,in,application.catalog; cli catalog verify,GET /catalog/instruments,seed: backend/src/alloyiq/cli/seed.py; domain/catalog.py,P3; disabled combinations carry reasons
 R015,in,domain (Instrument); repositories.instruments,GET /catalog/instruments,,P1 schema; P3 data
 R016,in,tools envelope; security validators,tool.completed,,P3/P6
 R017,in,application.catalog; adapters,GET /catalog/instruments,,P3; all MVP instruments data_mode=reference (DV-11)
@@ -36,8 +36,8 @@ R034,in,application.history; application.exports,GET /research/runs; POST /expor
 R035,in,application.exports; security (CSV neutraliser),POST /exports; GET /exports/{id},,P8
 R036,in,adapters.DummyPaymentProvider,POST /billing/credit-checkouts; POST /billing/checkouts/{id}/simulate; POST /webhooks/payments/{provider} (404),,P4
 R037,partial,application.billing,POST /billing/credit-checkouts,,P4; subscription changes deferred (DV-04)
-R038,in,billing (ledger); application.wallet,GET /account/balance; GET /account/ledger,,P4; Hypothesis property tests
-R039,in,billing (rate cards),GET /catalog/prices,,P4; rate card v1 stays draft until OD-3
+R038,in,billing (ledger); application.wallet,GET /account/balance; GET /account/ledger,backend/tests/integration/test_db_invariants.py (ledger trigger; wallet non-negative CHECK),P4; Hypothesis property tests
+R039,in,billing (rate cards),GET /catalog/prices,backend/tests/integration/test_db_invariants.py::test_active_rate_card_is_frozen,P4; rate card v1 stays draft until OD-3
 R040,in,adapters.AnthropicLLMGateway; billing,GET /research/runs/{id}/usage,,P6; cost_status=calculated only (DV-07)
 R041,in,application.reports; billing,GET /research/runs/{id}/usage; GET /reports/summary,,P6/P8
 R042,in,application.budget,admission + per-call checks,,P4/P5
@@ -47,12 +47,12 @@ R045,in,stats; application.reports,GET /reports/summary,,P8
 R046,in,stats (percentiles),GET /reports/summary,,P8; percentile_cont; null on empty; warn below 100
 R047,in,stats (success rate),GET /reports/summary,,P8
 R048,in,application.reports,GET /reports/summary,,P8; 90-day sync cap; 30 s cache; window basis per metric
-R049,in,security; api schemas; tools,all boundaries,,P1-P6
+R049,in,security; api schemas; tools,all boundaries,backend/tests/unit/test_money_schema.py; tests/contract/test_contracts.py,P1-P6
 R050,in,security (taint); agents prompts,,,P6
 R051,in,security validators; workflows (handoff_validation),validation.completed,,P6; injection + unit-mix fixtures
 R052,in,mcp_server; security (egress),,,P3
-R053,in,observability; repositories (audit_events),,,P1 tables; P2 onward audit writes
-R054,partial,worker (purge); application.deletion,POST /me/deletion-requests,,P9; third-party trace deletion deferred (DV-10)
+R053,in,observability; repositories (audit_events),,backend/tests/integration/test_db_invariants.py (immutable audit/ledger),P1 tables; P2 onward audit writes
+R054,partial,worker (purge); application.deletion,POST /me/deletion-requests,backend/tests/integration/test_schema.py::test_every_table_documents_a_retention_class,P9; third-party trace deletion deferred (DV-10)
 R055,partial,docs/ops,,,P9; restore drills deferred (DV-10)
 R056,in,worker (leases; fencing; recovery sweeper),,,P5
 R057,in,adapters (deadlines; retries; circuit breakers),,,P3/P6
@@ -62,9 +62,9 @@ R060,deferred,docs/ops,,,DV-06
 R061,deferred,docs/ops,,,DV-06
 R062,deferred,docs/ops,,,DV-06
 R063,deferred,docs/ops,,,DV-06
-R064,in,api (envelope; errors; middleware),/api/v1/*,backend/tests/unit/test_health.py,P0 shell: {data;meta} envelope + problem+json + UUID request IDs; full registry P1+
+R064,in,api (envelope; errors; middleware),/api/v1/*,backend/tests/unit/test_health.py; backend/tests/contract/test_contracts.py,P0 shell: {data;meta} envelope + problem+json + UUID request IDs; full registry P1+
 R065,in,api (idempotency),Idempotency-Key routes,,P5 and later
-R066,in,api SSE; frontend lib/sse/StreamController,GET /research/runs/{id}/events; GET /events,,P5/P7
+R066,in,api SSE; frontend lib/sse/StreamController,GET /research/runs/{id}/events; GET /events,backend/tests/contract/test_contracts.py (event schemas),P5/P7
 R067,in,(whole repo),,,ADR-001: Next.js + OO Python + LangGraph + MCP + PostgreSQL + LangSmith
 R068,partial,backend/tests; frontend tests; scripts/test.ps1,,scripts/test.ps1,P0 harness in place; suites grow each phase
 R069,partial,evaluations,,,P9; 30+ cases (DV-08)

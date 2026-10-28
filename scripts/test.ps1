@@ -25,18 +25,25 @@ function Invoke-Check([string]$Name, [scriptblock]$Body) {
 if ($Only -in 'all', 'backend') {
     Initialize-EnvFile
     $cfg = Read-EnvFile
-    Invoke-Check 'Start test PostgreSQL' {
-        Invoke-Native docker compose up -d --wait postgres
+    Invoke-Check 'Migrations down to base, back up, and seed (alloyiq_test)' {
+        # Proves every downgrade works and gives each run a clean database.
+        & (Join-Path $PSScriptRoot 'migrate.ps1') -Database alloyiq_test downgrade base *>&1 | Out-Null
+        if (-not $?) { throw 'downgrade failed' }
+        & (Join-Path $PSScriptRoot 'seed.ps1') -Database alloyiq_test *>&1 | Out-Null
+        if (-not $?) { throw 'upgrade/seed failed' }
     }
     $port = if ($cfg['POSTGRES_HOST_PORT']) { $cfg['POSTGRES_HOST_PORT'] } else { '5432' }
-    $env:TEST_DATABASE_URL = "postgresql+asyncpg://alloyiq_api:$($cfg['ALLOYIQ_API_DB_PASSWORD'])@127.0.0.1:$port/alloyiq_test"
+    $h = "127.0.0.1:$port/alloyiq_test"
+    $env:TEST_DATABASE_URL = "postgresql+asyncpg://alloyiq_api:$($cfg['ALLOYIQ_API_DB_PASSWORD'])@$h"
+    $env:TEST_WORKER_DATABASE_URL = "postgresql+asyncpg://alloyiq_worker:$($cfg['ALLOYIQ_WORKER_DB_PASSWORD'])@$h"
+    $env:TEST_MIGRATOR_DATABASE_URL = "postgresql+psycopg://alloyiq_migrator:$($cfg['ALLOYIQ_MIGRATOR_DB_PASSWORD'])@$h"
     $env:LIVE_PROVIDER_TESTS = '0'   # never spend real money from the default suite
 
     Push-Location (Join-Path $RepoRoot 'backend')
     try {
         Invoke-Check 'backend: uv sync' { Invoke-Native uv sync --frozen }
-        Invoke-Check 'backend: ruff format --check' { Invoke-Native uv run ruff format --check src tests }
-        Invoke-Check 'backend: ruff check' { Invoke-Native uv run ruff check src tests }
+        Invoke-Check 'backend: ruff format --check' { Invoke-Native uv run ruff format --check src tests migrations }
+        Invoke-Check 'backend: ruff check' { Invoke-Native uv run ruff check src tests migrations }
         Invoke-Check 'backend: mypy' { Invoke-Native uv run mypy }
         Invoke-Check 'backend: pytest' { Invoke-Native uv run pytest }
     } finally { Pop-Location }
@@ -51,6 +58,13 @@ if ($Only -in 'all', 'frontend') {
         Invoke-Check 'frontend: typecheck' { Invoke-Native pnpm typecheck }
         Invoke-Check 'frontend: vitest' { Invoke-Native pnpm test }
     } finally { Pop-Location }
+}
+
+if ($Only -in 'all', 'backend', 'frontend') {
+    Invoke-Check 'contracts: committed OpenAPI, event schemas and TS types match the code' {
+        & (Join-Path $PSScriptRoot 'gen-contracts.ps1') -Check *>&1 | Out-Host
+        if (-not $?) { throw 'contracts out of date' }
+    }
 }
 
 if (-not $SkipSecurity -and $Only -in 'all', 'security') {

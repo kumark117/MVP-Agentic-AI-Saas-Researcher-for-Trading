@@ -16,6 +16,14 @@ Docker Desktop (WSL 2), Git, Node.js 24 LTS with pnpm (via corepack), and uv (it
 
 ## Run
 
+Windows blocks `.ps1` scripts by default. Allow local scripts once for your user:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+(or run each script as `powershell -ExecutionPolicy Bypass -File scripts\dev.ps1`).
+
 ```powershell
 scripts\dev.ps1          # first run creates .env with random secrets, builds, starts, waits
 ```

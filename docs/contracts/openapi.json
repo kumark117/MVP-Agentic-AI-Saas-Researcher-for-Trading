@@ -1,0 +1,4061 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AlloyIQ API",
+    "version": "0.0.1"
+  },
+  "paths": {
+    "/api/v1/health/live": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Live",
+        "operationId": "live_api_v1_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_HealthStatus_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Ready",
+        "operationId": "ready_api_v1_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_HealthStatus_"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not safe to admit new work"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccountSummary": {
+        "properties": {
+          "account_id": {
+            "format": "uuid",
+            "title": "Account Id",
+            "type": "string"
+          },
+          "currency": {
+            "const": "INR",
+            "default": "INR",
+            "title": "Currency",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "plan": {
+            "title": "Plan",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_id",
+          "status",
+          "plan"
+        ],
+        "title": "AccountSummary",
+        "type": "object"
+      },
+      "Activity": {
+        "properties": {
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "sequence": {
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent"
+          },
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "tool_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Name"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "elapsed_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed Ms"
+          },
+          "retry": {
+            "title": "Retry",
+            "type": "integer"
+          },
+          "validation_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validation Status"
+          }
+        },
+        "required": [
+          "event_id",
+          "sequence",
+          "occurred_at",
+          "agent",
+          "action",
+          "tool_name",
+          "summary",
+          "elapsed_ms",
+          "retry",
+          "validation_status"
+        ],
+        "title": "Activity",
+        "type": "object"
+      },
+      "Balance": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "currency": {
+            "const": "INR",
+            "default": "INR",
+            "title": "Currency",
+            "type": "string"
+          },
+          "posted_credit": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "posted_debit": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "reserved": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "pending_settlement": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "available": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "label": {
+            "default": "Simulated demo credit: no cash value",
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "posted_credit",
+          "posted_debit",
+          "reserved",
+          "pending_settlement",
+          "available"
+        ],
+        "title": "Balance",
+        "type": "object"
+      },
+      "CancelRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          }
+        },
+        "title": "CancelRequest",
+        "type": "object"
+      },
+      "Catalog": {
+        "properties": {
+          "instruments": {
+            "items": {
+              "$ref": "#/components/schemas/Instrument"
+            },
+            "title": "Instruments",
+            "type": "array"
+          },
+          "unavailable": {
+            "items": {
+              "$ref": "#/components/schemas/UnavailableCombination"
+            },
+            "title": "Unavailable",
+            "type": "array"
+          }
+        },
+        "required": [
+          "instruments",
+          "unavailable"
+        ],
+        "title": "Catalog",
+        "type": "object"
+      },
+      "ChangePasswordRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "new_password": {
+            "maxLength": 256,
+            "minLength": 12,
+            "title": "New Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_password"
+        ],
+        "title": "ChangePasswordRequest",
+        "type": "object"
+      },
+      "Checkout": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "checkout_id": {
+            "format": "uuid",
+            "title": "Checkout Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "created",
+              "pending",
+              "paid",
+              "failed",
+              "expired"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "hosted_url": {
+            "title": "Hosted Url",
+            "type": "string"
+          },
+          "return_path": {
+            "title": "Return Path",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "credit_applied": {
+            "title": "Credit Applied",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "checkout_id",
+          "status",
+          "amount",
+          "hosted_url",
+          "return_path",
+          "expires_at",
+          "credit_applied",
+          "created_at"
+        ],
+        "title": "Checkout",
+        "type": "object"
+      },
+      "Citation": {
+        "properties": {
+          "evidence_id": {
+            "format": "uuid",
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "source_title": {
+            "title": "Source Title",
+            "type": "string"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "source_title",
+          "source_url",
+          "observed_at",
+          "content_hash"
+        ],
+        "title": "Citation",
+        "type": "object"
+      },
+      "Claim": {
+        "properties": {
+          "claim": {
+            "title": "Claim",
+            "type": "string"
+          },
+          "evidence_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "claim",
+          "evidence_ids"
+        ],
+        "title": "Claim",
+        "type": "object"
+      },
+      "Confidence": {
+        "properties": {
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "calibration_status": {
+            "const": "uncalibrated",
+            "default": "uncalibrated",
+            "title": "Calibration Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "score",
+          "label"
+        ],
+        "title": "Confidence",
+        "type": "object"
+      },
+      "Conversation": {
+        "properties": {
+          "conversation_id": {
+            "format": "uuid",
+            "title": "Conversation Id",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversation_id",
+          "title",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "Conversation",
+        "type": "object"
+      },
+      "Counts": {
+        "properties": {
+          "submitted": {
+            "title": "Submitted",
+            "type": "integer"
+          },
+          "queued": {
+            "title": "Queued",
+            "type": "integer"
+          },
+          "running": {
+            "title": "Running",
+            "type": "integer"
+          },
+          "succeeded": {
+            "title": "Succeeded",
+            "type": "integer"
+          },
+          "incomplete": {
+            "title": "Incomplete",
+            "type": "integer"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "cancelled": {
+            "title": "Cancelled",
+            "type": "integer"
+          },
+          "timed_out": {
+            "title": "Timed Out",
+            "type": "integer"
+          },
+          "queue_expired": {
+            "title": "Queue Expired",
+            "type": "integer"
+          },
+          "pending_billing": {
+            "title": "Pending Billing",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "submitted",
+          "queued",
+          "running",
+          "succeeded",
+          "incomplete",
+          "failed",
+          "cancelled",
+          "timed_out",
+          "queue_expired",
+          "pending_billing"
+        ],
+        "title": "Counts",
+        "type": "object"
+      },
+      "CreateConversationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          }
+        },
+        "title": "CreateConversationRequest",
+        "type": "object"
+      },
+      "CreateMessageRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "client_message_id": {
+            "format": "uuid",
+            "title": "Client Message Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "client_message_id"
+        ],
+        "title": "CreateMessageRequest",
+        "type": "object"
+      },
+      "CreditCheckoutRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "return_path": {
+            "maxLength": 200,
+            "pattern": "^/account(/[a-z0-9/_-]*)?$",
+            "title": "Return Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "return_path"
+        ],
+        "title": "CreditCheckoutRequest",
+        "type": "object"
+      },
+      "CsrfToken": {
+        "properties": {
+          "csrf_token": {
+            "title": "Csrf Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "csrf_token"
+        ],
+        "title": "CsrfToken",
+        "type": "object"
+      },
+      "DailyPoint": {
+        "properties": {
+          "day": {
+            "title": "Day",
+            "type": "string"
+          },
+          "submitted": {
+            "title": "Submitted",
+            "type": "integer"
+          },
+          "succeeded": {
+            "title": "Succeeded",
+            "type": "integer"
+          },
+          "provider_cost_usd": {
+            "title": "Provider Cost Usd",
+            "type": "string"
+          },
+          "customer_charge_inr": {
+            "title": "Customer Charge Inr",
+            "type": "string"
+          }
+        },
+        "required": [
+          "day",
+          "submitted",
+          "succeeded",
+          "provider_cost_usd",
+          "customer_charge_inr"
+        ],
+        "title": "DailyPoint",
+        "type": "object"
+      },
+      "DeletionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmation": {
+            "const": true,
+            "title": "Confirmation",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "confirmation"
+        ],
+        "title": "DeletionRequest",
+        "type": "object"
+      },
+      "DeletionScheduled": {
+        "properties": {
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "scheduled_at": {
+            "format": "date-time",
+            "title": "Scheduled At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "scheduled_at"
+        ],
+        "title": "DeletionScheduled",
+        "type": "object"
+      },
+      "EmailRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "EmailRequest",
+        "type": "object"
+      },
+      "Envelope_HealthStatus_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[HealthStatus]"
+      },
+      "Estimate": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "estimate_id": {
+            "format": "uuid",
+            "title": "Estimate Id",
+            "type": "string"
+          },
+          "request_fingerprint": {
+            "title": "Request Fingerprint",
+            "type": "string"
+          },
+          "normalized_request": {
+            "additionalProperties": true,
+            "title": "Normalized Request",
+            "type": "object"
+          },
+          "model_profile_id": {
+            "format": "uuid",
+            "title": "Model Profile Id",
+            "type": "string"
+          },
+          "primary_model_id": {
+            "title": "Primary Model Id",
+            "type": "string"
+          },
+          "approved_models": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Approved Models",
+            "type": "array"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/RunLimits"
+          },
+          "token_budget": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Token Budget",
+            "type": "object"
+          },
+          "price_version": {
+            "title": "Price Version",
+            "type": "string"
+          },
+          "min_charge": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "estimated_charge": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "max_charge": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "estimate_basis": {
+            "title": "Estimate Basis",
+            "type": "string"
+          },
+          "max_real_cost": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "estimate_id",
+          "request_fingerprint",
+          "normalized_request",
+          "model_profile_id",
+          "primary_model_id",
+          "approved_models",
+          "limits",
+          "token_budget",
+          "price_version",
+          "min_charge",
+          "estimated_charge",
+          "max_charge",
+          "estimate_basis",
+          "max_real_cost",
+          "expires_at"
+        ],
+        "title": "Estimate",
+        "type": "object"
+      },
+      "EstimateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "instrument_id": {
+            "format": "uuid",
+            "title": "Instrument Id",
+            "type": "string"
+          },
+          "horizon": {
+            "enum": [
+              "intraday",
+              "swing",
+              "long_term"
+            ],
+            "title": "Horizon",
+            "type": "string"
+          },
+          "model_profile_id": {
+            "format": "uuid",
+            "title": "Model Profile Id",
+            "type": "string"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Question"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Conversation Id"
+          }
+        },
+        "required": [
+          "instrument_id",
+          "horizon",
+          "model_profile_id"
+        ],
+        "title": "EstimateRequest",
+        "type": "object"
+      },
+      "ExportJob": {
+        "properties": {
+          "export_id": {
+            "format": "uuid",
+            "title": "Export Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "format": {
+            "title": "Format",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "ready",
+              "failed",
+              "expired"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "status_url": {
+            "title": "Status Url",
+            "type": "string"
+          },
+          "download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Url"
+          },
+          "download_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Expires At"
+          },
+          "row_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row Count"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "export_id",
+          "kind",
+          "format",
+          "status",
+          "status_url",
+          "download_url",
+          "download_expires_at",
+          "row_count",
+          "created_at"
+        ],
+        "title": "ExportJob",
+        "type": "object"
+      },
+      "ExportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "runs",
+              "usage",
+              "account_data"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "from": {
+            "format": "date-time",
+            "title": "From",
+            "type": "string"
+          },
+          "to": {
+            "format": "date-time",
+            "title": "To",
+            "type": "string"
+          },
+          "format": {
+            "enum": [
+              "csv",
+              "json"
+            ],
+            "title": "Format",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "from",
+          "to",
+          "format"
+        ],
+        "title": "ExportRequest",
+        "type": "object"
+      },
+      "Feedback": {
+        "properties": {
+          "feedback_id": {
+            "format": "uuid",
+            "title": "Feedback Id",
+            "type": "string"
+          },
+          "run_id": {
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "rating": {
+            "enum": [
+              "positive",
+              "negative"
+            ],
+            "title": "Rating",
+            "type": "string"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feedback_id",
+          "run_id",
+          "rating",
+          "comment",
+          "updated_at"
+        ],
+        "title": "Feedback",
+        "type": "object"
+      },
+      "FeedbackRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rating": {
+            "enum": [
+              "positive",
+              "negative"
+            ],
+            "title": "Rating",
+            "type": "string"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Comment"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "title": "FeedbackRequest",
+        "type": "object"
+      },
+      "Fresh": {
+        "properties": {
+          "result_type": {
+            "const": "fresh",
+            "default": "fresh",
+            "title": "Result Type",
+            "type": "string"
+          },
+          "fresh_until": {
+            "format": "date-time",
+            "title": "Fresh Until",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fresh_until"
+        ],
+        "title": "Fresh",
+        "type": "object"
+      },
+      "FreshnessPolicy": {
+        "properties": {
+          "max_quote_age_s": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Max Quote Age S",
+            "type": "object"
+          },
+          "expected_delay": {
+            "title": "Expected Delay",
+            "type": "string"
+          }
+        },
+        "required": [
+          "max_quote_age_s",
+          "expected_delay"
+        ],
+        "title": "FreshnessPolicy",
+        "type": "object"
+      },
+      "GenericAccepted": {
+        "description": "Same response whether or not the email exists (no enumeration, R008).",
+        "properties": {
+          "accepted": {
+            "const": true,
+            "default": true,
+            "title": "Accepted",
+            "type": "boolean"
+          },
+          "message": {
+            "default": "If the address can be used, you will receive an email shortly.",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "GenericAccepted",
+        "type": "object"
+      },
+      "HealthStatus": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "HealthStatus"
+      },
+      "Instrument": {
+        "properties": {
+          "instrument_id": {
+            "format": "uuid",
+            "title": "Instrument Id",
+            "type": "string"
+          },
+          "canonical_id": {
+            "title": "Canonical Id",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "metal": {
+            "title": "Metal",
+            "type": "string"
+          },
+          "venue": {
+            "title": "Venue",
+            "type": "string"
+          },
+          "data_mode": {
+            "enum": [
+              "exchange_live",
+              "exchange_delayed",
+              "reference"
+            ],
+            "title": "Data Mode",
+            "type": "string"
+          },
+          "data_mode_label": {
+            "title": "Data Mode Label",
+            "type": "string"
+          },
+          "instrument_type": {
+            "enum": [
+              "spot",
+              "futures_contract",
+              "futures_continuous",
+              "reference_series"
+            ],
+            "title": "Instrument Type",
+            "type": "string"
+          },
+          "contract_expiry": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Expiry"
+          },
+          "quote_currency": {
+            "title": "Quote Currency",
+            "type": "string"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          },
+          "supported_horizons": {
+            "items": {
+              "enum": [
+                "intraday",
+                "swing",
+                "long_term"
+              ],
+              "type": "string"
+            },
+            "title": "Supported Horizons",
+            "type": "array"
+          },
+          "freshness_policy": {
+            "$ref": "#/components/schemas/FreshnessPolicy"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable Reason"
+          }
+        },
+        "required": [
+          "instrument_id",
+          "canonical_id",
+          "display_name",
+          "metal",
+          "venue",
+          "data_mode",
+          "data_mode_label",
+          "instrument_type",
+          "contract_expiry",
+          "quote_currency",
+          "unit",
+          "timezone",
+          "supported_horizons",
+          "freshness_policy",
+          "enabled",
+          "unavailable_reason"
+        ],
+        "title": "Instrument",
+        "type": "object"
+      },
+      "Latency": {
+        "properties": {
+          "success_end_to_end": {
+            "$ref": "#/components/schemas/LatencyDistribution"
+          },
+          "all_terminal_end_to_end": {
+            "$ref": "#/components/schemas/LatencyDistribution"
+          },
+          "queue": {
+            "$ref": "#/components/schemas/LatencyDistribution"
+          },
+          "execution": {
+            "$ref": "#/components/schemas/LatencyDistribution"
+          }
+        },
+        "required": [
+          "success_end_to_end",
+          "all_terminal_end_to_end",
+          "queue",
+          "execution"
+        ],
+        "title": "Latency",
+        "type": "object"
+      },
+      "LatencyDistribution": {
+        "properties": {
+          "sample_count": {
+            "title": "Sample Count",
+            "type": "integer"
+          },
+          "p50_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P50 Ms"
+          },
+          "p95_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P95 Ms"
+          },
+          "p99_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P99 Ms"
+          },
+          "population": {
+            "title": "Population",
+            "type": "string"
+          },
+          "method": {
+            "const": "exact",
+            "default": "exact",
+            "title": "Method",
+            "type": "string"
+          },
+          "approximate": {
+            "const": false,
+            "default": false,
+            "title": "Approximate",
+            "type": "boolean"
+          },
+          "low_sample": {
+            "title": "Low Sample",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sample_count",
+          "p50_ms",
+          "p95_ms",
+          "p99_ms",
+          "population",
+          "low_sample"
+        ],
+        "title": "LatencyDistribution",
+        "type": "object"
+      },
+      "LatestRun": {
+        "properties": {
+          "run_id": {
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "end_to_end_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End To End Ms"
+          },
+          "billing_status": {
+            "title": "Billing Status",
+            "type": "string"
+          },
+          "model_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Model Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "run_id",
+          "status",
+          "submitted_at",
+          "end_to_end_ms",
+          "billing_status",
+          "model_ids"
+        ],
+        "title": "LatestRun",
+        "type": "object"
+      },
+      "LedgerEntry": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "transaction_id": {
+            "format": "uuid",
+            "title": "Transaction Id",
+            "type": "string"
+          },
+          "business_event_id": {
+            "title": "Business Event Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "checkout_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Id"
+          },
+          "refund_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refund Id"
+          },
+          "reverses_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reverses Id"
+          },
+          "posted_at": {
+            "format": "date-time",
+            "title": "Posted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "transaction_id",
+          "business_event_id",
+          "kind",
+          "amount",
+          "description",
+          "run_id",
+          "checkout_id",
+          "refund_id",
+          "reverses_id",
+          "posted_at"
+        ],
+        "title": "LedgerEntry",
+        "type": "object"
+      },
+      "LoginRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
+      "LoginResult": {
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "session_expires_at": {
+            "format": "date-time",
+            "title": "Session Expires At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user",
+          "session_expires_at"
+        ],
+        "title": "LoginResult",
+        "type": "object"
+      },
+      "Me": {
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "account": {
+            "$ref": "#/components/schemas/AccountSummary"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Permissions",
+            "type": "array"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/Preferences"
+          },
+          "current_session_id": {
+            "format": "uuid",
+            "title": "Current Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user",
+          "account",
+          "permissions",
+          "preferences",
+          "current_session_id"
+        ],
+        "title": "Me",
+        "type": "object"
+      },
+      "Message": {
+        "properties": {
+          "message_id": {
+            "format": "uuid",
+            "title": "Message Id",
+            "type": "string"
+          },
+          "conversation_id": {
+            "format": "uuid",
+            "title": "Conversation Id",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant",
+              "system"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message_id",
+          "conversation_id",
+          "role",
+          "content",
+          "run_id",
+          "created_at"
+        ],
+        "title": "Message",
+        "type": "object"
+      },
+      "Meta": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Server Time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "server_time"
+        ],
+        "title": "Meta"
+      },
+      "ModelProfile": {
+        "properties": {
+          "model_profile_id": {
+            "format": "uuid",
+            "title": "Model Profile Id",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "provider": {
+            "const": "anthropic",
+            "title": "Provider",
+            "type": "string"
+          },
+          "primary_model_id": {
+            "title": "Primary Model Id",
+            "type": "string"
+          },
+          "approved_fallback_model_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Approved Fallback Model Ids",
+            "type": "array"
+          },
+          "fallback_policy": {
+            "title": "Fallback Policy",
+            "type": "string"
+          },
+          "branch_effort": {
+            "title": "Branch Effort",
+            "type": "string"
+          },
+          "signal_effort": {
+            "title": "Signal Effort",
+            "type": "string"
+          },
+          "context_limit_tokens": {
+            "title": "Context Limit Tokens",
+            "type": "integer"
+          },
+          "run_input_token_budget": {
+            "title": "Run Input Token Budget",
+            "type": "integer"
+          },
+          "run_output_token_budget": {
+            "title": "Run Output Token Budget",
+            "type": "integer"
+          },
+          "max_tokens": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Max Tokens",
+            "type": "object"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/RunLimits"
+          },
+          "rate_card_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Card Version"
+          },
+          "is_default": {
+            "title": "Is Default",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "model_profile_id",
+          "slug",
+          "display_name",
+          "provider",
+          "primary_model_id",
+          "approved_fallback_model_ids",
+          "fallback_policy",
+          "branch_effort",
+          "signal_effort",
+          "context_limit_tokens",
+          "run_input_token_budget",
+          "run_output_token_budget",
+          "max_tokens",
+          "limits",
+          "rate_card_version",
+          "is_default"
+        ],
+        "title": "ModelProfile",
+        "type": "object"
+      },
+      "ModelRow": {
+        "properties": {
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "calls": {
+            "title": "Calls",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          },
+          "provider_cost": {
+            "$ref": "#/components/schemas/ProviderCost"
+          },
+          "customer_charge": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "success_rate": {
+            "$ref": "#/components/schemas/SuccessRate"
+          },
+          "latency": {
+            "$ref": "#/components/schemas/LatencyDistribution"
+          }
+        },
+        "required": [
+          "model_id",
+          "calls",
+          "usage",
+          "provider_cost",
+          "customer_charge",
+          "success_rate",
+          "latency"
+        ],
+        "title": "ModelRow",
+        "type": "object"
+      },
+      "ModelsReport": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "interval": {
+            "additionalProperties": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": "Interval",
+            "type": "object"
+          },
+          "data_as_of": {
+            "format": "date-time",
+            "title": "Data As Of",
+            "type": "string"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelRow"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "interval",
+          "data_as_of",
+          "models",
+          "warnings"
+        ],
+        "title": "ModelsReport",
+        "type": "object"
+      },
+      "Money": {
+        "additionalProperties": false,
+        "properties": {
+          "currency": {
+            "enum": [
+              "INR",
+              "USD"
+            ],
+            "title": "Currency",
+            "type": "string"
+          },
+          "amount": {
+            "examples": [
+              "25.00"
+            ],
+            "pattern": "^-?\\d{1,14}(\\.\\d{1,6})?$",
+            "title": "Amount",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currency",
+          "amount"
+        ],
+        "title": "Money",
+        "type": "object"
+      },
+      "PasswordChanged": {
+        "properties": {
+          "changed": {
+            "const": true,
+            "default": true,
+            "title": "Changed",
+            "type": "boolean"
+          }
+        },
+        "title": "PasswordChanged",
+        "type": "object"
+      },
+      "Plan": {
+        "properties": {
+          "plan_id": {
+            "format": "uuid",
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "active_runs": {
+            "title": "Active Runs",
+            "type": "integer"
+          },
+          "queued_runs": {
+            "title": "Queued Runs",
+            "type": "integer"
+          },
+          "sse_streams": {
+            "title": "Sse Streams",
+            "type": "integer"
+          },
+          "daily_topup_limit": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "fixed_fee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_id",
+          "slug",
+          "display_name",
+          "active_runs",
+          "queued_runs",
+          "sse_streams",
+          "daily_topup_limit",
+          "fixed_fee",
+          "note"
+        ],
+        "title": "Plan",
+        "type": "object"
+      },
+      "Preferences": {
+        "properties": {
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          },
+          "default_model_profile_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Model Profile Id"
+          }
+        },
+        "required": [
+          "locale",
+          "timezone",
+          "default_model_profile_id"
+        ],
+        "title": "Preferences",
+        "type": "object"
+      },
+      "Progress": {
+        "properties": {
+          "completed_nodes": {
+            "title": "Completed Nodes",
+            "type": "integer"
+          },
+          "total_nodes": {
+            "title": "Total Nodes",
+            "type": "integer"
+          },
+          "active_nodes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Active Nodes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "completed_nodes",
+          "total_nodes",
+          "active_nodes"
+        ],
+        "title": "Progress",
+        "type": "object"
+      },
+      "ProviderCost": {
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "cost_status": {
+            "enum": [
+              "calculated",
+              "reconciled",
+              "unknown"
+            ],
+            "title": "Cost Status",
+            "type": "string"
+          },
+          "unknown_call_count": {
+            "title": "Unknown Call Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "amount",
+          "cost_status",
+          "unknown_call_count"
+        ],
+        "title": "ProviderCost",
+        "type": "object"
+      },
+      "RateCard": {
+        "properties": {
+          "version": {
+            "title": "Version",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active",
+              "retired"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "effective_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective From"
+          },
+          "effective_to": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective To"
+          },
+          "demo_fx_usd_inr": {
+            "title": "Demo Fx Usd Inr",
+            "type": "string"
+          },
+          "demo_markup": {
+            "title": "Demo Markup",
+            "type": "string"
+          },
+          "fx_rule": {
+            "title": "Fx Rule",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RateItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "version",
+          "status",
+          "effective_from",
+          "effective_to",
+          "demo_fx_usd_inr",
+          "demo_markup",
+          "fx_rule",
+          "note",
+          "items"
+        ],
+        "title": "RateCard",
+        "type": "object"
+      },
+      "RateItem": {
+        "properties": {
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "token_category": {
+            "enum": [
+              "input",
+              "output",
+              "cache_read",
+              "cache_write"
+            ],
+            "title": "Token Category",
+            "type": "string"
+          },
+          "provider_usd_per_mtok": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_inr_per_mtok_simulated": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verified": {
+            "title": "Verified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "model_id",
+          "token_category",
+          "provider_usd_per_mtok",
+          "customer_inr_per_mtok_simulated",
+          "verified"
+        ],
+        "title": "RateItem",
+        "type": "object"
+      },
+      "ReauthenticateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "password": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "ReauthenticateRequest",
+        "type": "object"
+      },
+      "Receipt": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "receipt_id": {
+            "format": "uuid",
+            "title": "Receipt Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "topup",
+              "refund"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "sample": {
+            "const": true,
+            "default": true,
+            "title": "Sample",
+            "type": "boolean"
+          },
+          "label": {
+            "default": "Simulation - not a tax invoice",
+            "title": "Label",
+            "type": "string"
+          },
+          "checkout_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Id"
+          },
+          "refund_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refund Id"
+          },
+          "issued_at": {
+            "format": "date-time",
+            "title": "Issued At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "receipt_id",
+          "kind",
+          "amount",
+          "checkout_id",
+          "refund_id",
+          "issued_at"
+        ],
+        "title": "Receipt",
+        "type": "object"
+      },
+      "Refund": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "refund_id": {
+            "format": "uuid",
+            "title": "Refund Id",
+            "type": "string"
+          },
+          "checkout_id": {
+            "format": "uuid",
+            "title": "Checkout Id",
+            "type": "string"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "status": {
+            "enum": [
+              "requested",
+              "succeeded",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refund_id",
+          "checkout_id",
+          "amount",
+          "status",
+          "reason",
+          "created_at"
+        ],
+        "title": "Refund",
+        "type": "object"
+      },
+      "RefundRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "payment_id": {
+            "format": "uuid",
+            "title": "Payment Id",
+            "type": "string"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payment_id",
+          "amount",
+          "reason"
+        ],
+        "title": "RefundRequest",
+        "type": "object"
+      },
+      "RegisterAccepted": {
+        "properties": {
+          "accepted": {
+            "const": true,
+            "default": true,
+            "title": "Accepted",
+            "type": "boolean"
+          },
+          "message": {
+            "default": "If the address can be used, you will receive an email shortly.",
+            "title": "Message",
+            "type": "string"
+          },
+          "verification_required": {
+            "const": true,
+            "default": true,
+            "title": "Verification Required",
+            "type": "boolean"
+          }
+        },
+        "title": "RegisterAccepted",
+        "type": "object"
+      },
+      "RegisterRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 256,
+            "minLength": 12,
+            "title": "Password",
+            "type": "string"
+          },
+          "display_name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "terms_version": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Terms Version",
+            "type": "string"
+          },
+          "privacy_version": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Privacy Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "display_name",
+          "terms_version",
+          "privacy_version"
+        ],
+        "title": "RegisterRequest",
+        "type": "object"
+      },
+      "Report": {
+        "properties": {
+          "report_id": {
+            "format": "uuid",
+            "title": "Report Id",
+            "type": "string"
+          },
+          "run_id": {
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "instrument_snapshot": {
+            "additionalProperties": true,
+            "title": "Instrument Snapshot",
+            "type": "object"
+          },
+          "horizon": {
+            "enum": [
+              "intraday",
+              "swing",
+              "long_term"
+            ],
+            "title": "Horizon",
+            "type": "string"
+          },
+          "signal": {
+            "enum": [
+              "BUY",
+              "SELL",
+              "HOLD",
+              "NO_SIGNAL"
+            ],
+            "title": "Signal",
+            "type": "string"
+          },
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "supporting_evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "title": "Supporting Evidence",
+            "type": "array"
+          },
+          "opposing_evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "title": "Opposing Evidence",
+            "type": "array"
+          },
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Risks",
+            "type": "array"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "missing_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Evidence",
+            "type": "array"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "data_as_of": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data As Of"
+          },
+          "freshness_state": {
+            "title": "Freshness State",
+            "type": "string"
+          },
+          "validation_summary": {
+            "$ref": "#/components/schemas/ValidationSummary"
+          },
+          "research_only_disclosure": {
+            "title": "Research Only Disclosure",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "report_id",
+          "run_id",
+          "instrument_snapshot",
+          "horizon",
+          "signal",
+          "complete",
+          "confidence",
+          "summary",
+          "supporting_evidence",
+          "opposing_evidence",
+          "assumptions",
+          "risks",
+          "limitations",
+          "missing_evidence",
+          "citations",
+          "data_as_of",
+          "freshness_state",
+          "validation_summary",
+          "research_only_disclosure",
+          "created_at"
+        ],
+        "title": "Report",
+        "type": "object"
+      },
+      "ResetDone": {
+        "properties": {
+          "reset": {
+            "const": true,
+            "default": true,
+            "title": "Reset",
+            "type": "boolean"
+          }
+        },
+        "title": "ResetDone",
+        "type": "object"
+      },
+      "ResetPasswordRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "maxLength": 200,
+            "minLength": 20,
+            "title": "Token",
+            "type": "string"
+          },
+          "new_password": {
+            "maxLength": 256,
+            "minLength": 12,
+            "title": "New Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "new_password"
+        ],
+        "title": "ResetPasswordRequest",
+        "type": "object"
+      },
+      "Revoked": {
+        "properties": {
+          "revoked": {
+            "const": true,
+            "default": true,
+            "title": "Revoked",
+            "type": "boolean"
+          }
+        },
+        "title": "Revoked",
+        "type": "object"
+      },
+      "RevokedCount": {
+        "properties": {
+          "revoked_count": {
+            "title": "Revoked Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revoked_count"
+        ],
+        "title": "RevokedCount",
+        "type": "object"
+      },
+      "RunAccepted": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "run_id": {
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "cancel_requested",
+              "succeeded",
+              "incomplete",
+              "failed",
+              "cancelled",
+              "timed_out"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "billing_status": {
+            "enum": [
+              "reserved",
+              "pending_settlement",
+              "settled",
+              "released",
+              "disputed"
+            ],
+            "title": "Billing Status",
+            "type": "string"
+          },
+          "reserved_amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "status_url": {
+            "title": "Status Url",
+            "type": "string"
+          },
+          "events_url": {
+            "title": "Events Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "status",
+          "billing_status",
+          "reserved_amount",
+          "status_url",
+          "events_url"
+        ],
+        "title": "RunAccepted",
+        "type": "object"
+      },
+      "RunLimits": {
+        "properties": {
+          "run_model_calls": {
+            "title": "Run Model Calls",
+            "type": "integer"
+          },
+          "run_tool_calls": {
+            "title": "Run Tool Calls",
+            "type": "integer"
+          },
+          "run_active_seconds": {
+            "title": "Run Active Seconds",
+            "type": "integer"
+          },
+          "branch_model_calls": {
+            "title": "Branch Model Calls",
+            "type": "integer"
+          },
+          "branch_tool_calls": {
+            "title": "Branch Tool Calls",
+            "type": "integer"
+          },
+          "structured_output_repairs": {
+            "title": "Structured Output Repairs",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "run_model_calls",
+          "run_tool_calls",
+          "run_active_seconds",
+          "branch_model_calls",
+          "branch_tool_calls",
+          "structured_output_repairs"
+        ],
+        "title": "RunLimits",
+        "type": "object"
+      },
+      "RunSnapshot": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "run_id": {
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "instrument_id": {
+            "format": "uuid",
+            "title": "Instrument Id",
+            "type": "string"
+          },
+          "instrument_snapshot": {
+            "additionalProperties": true,
+            "title": "Instrument Snapshot",
+            "type": "object"
+          },
+          "horizon": {
+            "enum": [
+              "intraday",
+              "swing",
+              "long_term"
+            ],
+            "title": "Horizon",
+            "type": "string"
+          },
+          "model_profile_id": {
+            "format": "uuid",
+            "title": "Model Profile Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "cancel_requested",
+              "succeeded",
+              "incomplete",
+              "failed",
+              "cancelled",
+              "timed_out"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "billing_status": {
+            "enum": [
+              "reserved",
+              "pending_settlement",
+              "settled",
+              "released",
+              "disputed"
+            ],
+            "title": "Billing Status",
+            "type": "string"
+          },
+          "outcome_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome Reason"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "cancel_requested_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel Requested At"
+          },
+          "terminal_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminal At"
+          },
+          "queue_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Ms"
+          },
+          "execution_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Ms"
+          },
+          "end_to_end_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End To End Ms"
+          },
+          "time_to_first_activity_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time To First Activity Ms"
+          },
+          "time_to_first_model_token_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time To First Model Token Ms"
+          },
+          "latest_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Event Id"
+          },
+          "report_available": {
+            "title": "Report Available",
+            "type": "boolean"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/Progress"
+          },
+          "authorized_max_charge": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "reserved_amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "settled_charge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pending_amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "released_amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "versions": {
+            "$ref": "#/components/schemas/Versions"
+          },
+          "observability_gap": {
+            "title": "Observability Gap",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "run_id",
+          "conversation_id",
+          "instrument_id",
+          "instrument_snapshot",
+          "horizon",
+          "model_profile_id",
+          "status",
+          "billing_status",
+          "outcome_reason",
+          "error_code",
+          "submitted_at",
+          "started_at",
+          "cancel_requested_at",
+          "terminal_at",
+          "queue_ms",
+          "execution_ms",
+          "end_to_end_ms",
+          "time_to_first_activity_ms",
+          "time_to_first_model_token_ms",
+          "latest_event_id",
+          "report_available",
+          "progress",
+          "authorized_max_charge",
+          "reserved_amount",
+          "settled_charge",
+          "pending_amount",
+          "released_amount",
+          "versions",
+          "observability_gap"
+        ],
+        "title": "RunSnapshot",
+        "type": "object"
+      },
+      "RunSummary": {
+        "properties": {
+          "run_id": {
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "instrument_id": {
+            "format": "uuid",
+            "title": "Instrument Id",
+            "type": "string"
+          },
+          "instrument_display_name": {
+            "title": "Instrument Display Name",
+            "type": "string"
+          },
+          "horizon": {
+            "enum": [
+              "intraday",
+              "swing",
+              "long_term"
+            ],
+            "title": "Horizon",
+            "type": "string"
+          },
+          "model_profile_id": {
+            "format": "uuid",
+            "title": "Model Profile Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "cancel_requested",
+              "succeeded",
+              "incomplete",
+              "failed",
+              "cancelled",
+              "timed_out"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "billing_status": {
+            "enum": [
+              "reserved",
+              "pending_settlement",
+              "settled",
+              "released",
+              "disputed"
+            ],
+            "title": "Billing Status",
+            "type": "string"
+          },
+          "signal": {
+            "anyOf": [
+              {
+                "enum": [
+                  "BUY",
+                  "SELL",
+                  "HOLD",
+                  "NO_SIGNAL"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "terminal_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminal At"
+          },
+          "end_to_end_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End To End Ms"
+          },
+          "settled_charge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "run_id",
+          "instrument_id",
+          "instrument_display_name",
+          "horizon",
+          "model_profile_id",
+          "status",
+          "billing_status",
+          "signal",
+          "submitted_at",
+          "terminal_at",
+          "end_to_end_ms",
+          "settled_charge"
+        ],
+        "title": "RunSummary",
+        "type": "object"
+      },
+      "RunUsage": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "run_id": {
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "billing_status": {
+            "enum": [
+              "reserved",
+              "pending_settlement",
+              "settled",
+              "released",
+              "disputed"
+            ],
+            "title": "Billing Status",
+            "type": "string"
+          },
+          "price_version": {
+            "title": "Price Version",
+            "type": "string"
+          },
+          "authorized_max_charge": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "settled_charge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pending_amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "released_amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "provider_cost_total": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provider_cost_status": {
+            "enum": [
+              "calculated",
+              "reconciled",
+              "unknown"
+            ],
+            "title": "Provider Cost Status",
+            "type": "string"
+          },
+          "unknown_call_count": {
+            "title": "Unknown Call Count",
+            "type": "integer"
+          },
+          "calls": {
+            "items": {
+              "$ref": "#/components/schemas/UsageCall"
+            },
+            "title": "Calls",
+            "type": "array"
+          }
+        },
+        "required": [
+          "run_id",
+          "billing_status",
+          "price_version",
+          "authorized_max_charge",
+          "settled_charge",
+          "pending_amount",
+          "released_amount",
+          "provider_cost_total",
+          "provider_cost_status",
+          "unknown_call_count",
+          "calls"
+        ],
+        "title": "RunUsage",
+        "type": "object"
+      },
+      "SessionInfo": {
+        "properties": {
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "device": {
+            "title": "Device",
+            "type": "string"
+          },
+          "ip_prefix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Prefix"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "last_seen_at": {
+            "format": "date-time",
+            "title": "Last Seen At",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "current": {
+            "title": "Current",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "session_id",
+          "device",
+          "ip_prefix",
+          "created_at",
+          "last_seen_at",
+          "expires_at",
+          "current"
+        ],
+        "title": "SessionInfo",
+        "type": "object"
+      },
+      "SimulateAccepted": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "checkout_id": {
+            "format": "uuid",
+            "title": "Checkout Id",
+            "type": "string"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "accepted": {
+            "const": true,
+            "default": true,
+            "title": "Accepted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "checkout_id",
+          "event_id"
+        ],
+        "title": "SimulateAccepted",
+        "type": "object"
+      },
+      "SimulateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "enum": [
+              "success",
+              "failure",
+              "pending"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "title": "SimulateRequest",
+        "type": "object"
+      },
+      "StartRunRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "estimate_id": {
+            "format": "uuid",
+            "title": "Estimate Id",
+            "type": "string"
+          },
+          "max_charge": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "estimate_id",
+          "max_charge"
+        ],
+        "title": "StartRunRequest",
+        "type": "object"
+      },
+      "SuccessRate": {
+        "properties": {
+          "numerator": {
+            "title": "Numerator",
+            "type": "integer"
+          },
+          "denominator": {
+            "title": "Denominator",
+            "type": "integer"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "definition": {
+            "default": "succeeded / (succeeded + incomplete + failed + timed_out)",
+            "title": "Definition",
+            "type": "string"
+          }
+        },
+        "required": [
+          "numerator",
+          "denominator",
+          "value"
+        ],
+        "title": "SuccessRate",
+        "type": "object"
+      },
+      "Summary": {
+        "properties": {
+          "payment_mode": {
+            "const": "simulated",
+            "default": "simulated",
+            "title": "Payment Mode",
+            "type": "string"
+          },
+          "money_collected": {
+            "$ref": "#/components/schemas/Money",
+            "default": {
+              "currency": "INR",
+              "amount": "0.00"
+            }
+          },
+          "interval": {
+            "additionalProperties": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": "Interval",
+            "type": "object"
+          },
+          "timezone": {
+            "const": "UTC",
+            "default": "UTC",
+            "title": "Timezone",
+            "type": "string"
+          },
+          "data_as_of": {
+            "format": "date-time",
+            "title": "Data As Of",
+            "type": "string"
+          },
+          "filters": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Filters",
+            "type": "object"
+          },
+          "window_basis": {
+            "$ref": "#/components/schemas/WindowBasis"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/Counts"
+          },
+          "success_rate": {
+            "$ref": "#/components/schemas/SuccessRate"
+          },
+          "latency": {
+            "$ref": "#/components/schemas/Latency"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          },
+          "provider_cost": {
+            "$ref": "#/components/schemas/ProviderCost"
+          },
+          "customer_charge": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "retries": {
+            "title": "Retries",
+            "type": "integer"
+          },
+          "tool_errors": {
+            "title": "Tool Errors",
+            "type": "integer"
+          },
+          "validation_failures": {
+            "title": "Validation Failures",
+            "type": "integer"
+          },
+          "security_blocks": {
+            "title": "Security Blocks",
+            "type": "integer"
+          },
+          "cache_hits": {
+            "title": "Cache Hits",
+            "type": "integer"
+          },
+          "latest_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LatestRun"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "daily": {
+            "items": {
+              "$ref": "#/components/schemas/DailyPoint"
+            },
+            "title": "Daily",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "interval",
+          "data_as_of",
+          "filters",
+          "window_basis",
+          "counts",
+          "success_rate",
+          "latency",
+          "usage",
+          "provider_cost",
+          "customer_charge",
+          "retries",
+          "tool_errors",
+          "validation_failures",
+          "security_blocks",
+          "cache_hits",
+          "latest_run",
+          "daily",
+          "warnings"
+        ],
+        "title": "Summary",
+        "type": "object"
+      },
+      "TokenCategories": {
+        "properties": {
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "cache_read_input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Read Input Tokens"
+          },
+          "cache_creation_input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Creation Input Tokens"
+          }
+        },
+        "required": [
+          "input_tokens",
+          "output_tokens",
+          "cache_read_input_tokens",
+          "cache_creation_input_tokens"
+        ],
+        "title": "TokenCategories",
+        "type": "object"
+      },
+      "TokenRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "maxLength": 200,
+            "minLength": 20,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "TokenRequest",
+        "type": "object"
+      },
+      "UnavailableCombination": {
+        "properties": {
+          "metal": {
+            "title": "Metal",
+            "type": "string"
+          },
+          "venue": {
+            "title": "Venue",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "metal",
+          "venue",
+          "reason"
+        ],
+        "title": "UnavailableCombination",
+        "type": "object"
+      },
+      "UpdateMeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Display Name"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Locale"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Timezone"
+          },
+          "default_model_profile_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Default Model Profile Id"
+          }
+        },
+        "title": "UpdateMeRequest",
+        "type": "object"
+      },
+      "Usage": {
+        "properties": {
+          "input_tokens": {
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "title": "Output Tokens",
+            "type": "integer"
+          },
+          "cached_input_tokens": {
+            "title": "Cached Input Tokens",
+            "type": "integer"
+          },
+          "cache_write_tokens": {
+            "title": "Cache Write Tokens",
+            "type": "integer"
+          },
+          "unknown_call_count": {
+            "title": "Unknown Call Count",
+            "type": "integer"
+          },
+          "note": {
+            "default": "Thinking tokens are included in output_tokens; categories do not overlap.",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "input_tokens",
+          "output_tokens",
+          "cached_input_tokens",
+          "cache_write_tokens",
+          "unknown_call_count"
+        ],
+        "title": "Usage",
+        "type": "object"
+      },
+      "UsageCall": {
+        "properties": {
+          "call_id": {
+            "format": "uuid",
+            "title": "Call Id",
+            "type": "string"
+          },
+          "attempt": {
+            "title": "Attempt",
+            "type": "integer"
+          },
+          "node_id": {
+            "title": "Node Id",
+            "type": "string"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "provider": {
+            "const": "anthropic",
+            "title": "Provider",
+            "type": "string"
+          },
+          "model_requested": {
+            "title": "Model Requested",
+            "type": "string"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "fallback_used": {
+            "title": "Fallback Used",
+            "type": "boolean"
+          },
+          "provider_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Request Id"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "usage_status": {
+            "enum": [
+              "actual",
+              "unknown",
+              "estimated"
+            ],
+            "title": "Usage Status",
+            "type": "string"
+          },
+          "token_categories": {
+            "$ref": "#/components/schemas/TokenCategories"
+          },
+          "billable": {
+            "title": "Billable",
+            "type": "boolean"
+          },
+          "nonbillable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nonbillable Reason"
+          },
+          "provider_cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cost_status": {
+            "enum": [
+              "calculated",
+              "reconciled",
+              "unknown"
+            ],
+            "title": "Cost Status",
+            "type": "string"
+          },
+          "computed_charge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reconciliation_status": {
+            "title": "Reconciliation Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "call_id",
+          "attempt",
+          "node_id",
+          "purpose",
+          "provider",
+          "model_requested",
+          "model_id",
+          "fallback_used",
+          "provider_request_id",
+          "started_at",
+          "duration_ms",
+          "usage_status",
+          "token_categories",
+          "billable",
+          "nonbillable_reason",
+          "provider_cost",
+          "cost_status",
+          "computed_charge",
+          "reconciliation_status"
+        ],
+        "title": "UsageCall",
+        "type": "object"
+      },
+      "UserSummary": {
+        "properties": {
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email_verified": {
+            "title": "Email Verified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "user_id",
+          "email",
+          "display_name",
+          "email_verified"
+        ],
+        "title": "UserSummary",
+        "type": "object"
+      },
+      "ValidationCheck": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Detail"
+          }
+        },
+        "required": [
+          "name",
+          "passed"
+        ],
+        "title": "ValidationCheck",
+        "type": "object"
+      },
+      "ValidationSummary": {
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "repaired": {
+            "title": "Repaired",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "checks",
+          "passed",
+          "repaired"
+        ],
+        "title": "ValidationSummary",
+        "type": "object"
+      },
+      "Verified": {
+        "properties": {
+          "verified": {
+            "const": true,
+            "default": true,
+            "title": "Verified",
+            "type": "boolean"
+          }
+        },
+        "title": "Verified",
+        "type": "object"
+      },
+      "Versions": {
+        "properties": {
+          "graph": {
+            "title": "Graph",
+            "type": "string"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "policy": {
+            "title": "Policy",
+            "type": "string"
+          },
+          "rate_card": {
+            "title": "Rate Card",
+            "type": "string"
+          },
+          "application": {
+            "title": "Application",
+            "type": "string"
+          }
+        },
+        "required": [
+          "graph",
+          "prompt",
+          "policy",
+          "rate_card",
+          "application"
+        ],
+        "title": "Versions",
+        "type": "object"
+      },
+      "WindowBasis": {
+        "properties": {
+          "counts": {
+            "const": "submitted_at",
+            "default": "submitted_at",
+            "title": "Counts",
+            "type": "string"
+          },
+          "outcomes": {
+            "const": "terminal_at",
+            "default": "terminal_at",
+            "title": "Outcomes",
+            "type": "string"
+          },
+          "financial": {
+            "const": "posted_at",
+            "default": "posted_at",
+            "title": "Financial",
+            "type": "string"
+          }
+        },
+        "title": "WindowBasis",
+        "type": "object"
+      }
+    }
+  }
+}

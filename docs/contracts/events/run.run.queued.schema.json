@@ -1,0 +1,123 @@
+{
+  "additionalProperties": false,
+  "description": "The JSON carried in an SSE `data:` field (D085).",
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "event_id": {
+      "pattern": "^[0-9a-f-]{36}:\\d+$",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "run_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Run Id"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "request_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Request Id"
+    },
+    "payload": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "queued",
+          "default": "queued",
+          "title": "Status",
+          "type": "string"
+        },
+        "billing_status": {
+          "enum": [
+            "reserved",
+            "pending_settlement",
+            "settled",
+            "released",
+            "disputed"
+          ],
+          "title": "Billing Status",
+          "type": "string"
+        },
+        "reserved_amount": {
+          "$ref": "#/$defs/Money"
+        }
+      },
+      "required": [
+        "billing_status",
+        "reserved_amount"
+      ],
+      "title": "RunQueued",
+      "type": "object"
+    }
+  },
+  "required": [
+    "event_id",
+    "sequence",
+    "occurred_at",
+    "payload"
+  ],
+  "title": "run:run.queued",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-sse-event": "run.queued",
+  "x-scope": "run",
+  "$defs": {
+    "Money": {
+      "additionalProperties": false,
+      "properties": {
+        "currency": {
+          "enum": [
+            "INR",
+            "USD"
+          ],
+          "title": "Currency",
+          "type": "string"
+        },
+        "amount": {
+          "examples": [
+            "25.00"
+          ],
+          "pattern": "^-?\\d{1,14}(\\.\\d{1,6})?$",
+          "title": "Amount",
+          "type": "string"
+        }
+      },
+      "required": [
+        "currency",
+        "amount"
+      ],
+      "title": "Money",
+      "type": "object"
+    }
+  }
+}
