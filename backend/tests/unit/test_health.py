@@ -74,3 +74,13 @@ async def test_public_request_id_accepted_only_if_uuid(incoming: str, kept: bool
     rid = r.headers["x-request-id"]
     assert (rid == incoming) is kept
     assert uuid.UUID(rid)
+
+
+def test_compose_inline_comment_is_not_a_secret() -> None:
+    from pydantic import SecretStr
+
+    from alloyiq.config import secret_or_none
+
+    assert secret_or_none(SecretStr("# optional; empty = local trace sink")) is None
+    assert secret_or_none(SecretStr("   ")) is None and secret_or_none(None) is None
+    assert secret_or_none(SecretStr(" lsv2_abc ")) == "lsv2_abc"

@@ -19,6 +19,9 @@ import anthropic
 
 from alloyiq.billing.rates import TokenUsage
 from alloyiq.domain.llm import LLMError, LLMRequest, LLMResponse, ToolUse
+from alloyiq.observability.logging import get_logger
+
+log = get_logger(__name__)
 
 
 def _usage(u: Any) -> TokenUsage | None:
@@ -134,6 +137,10 @@ class AnthropicLLMGateway:
         except anthropic.InternalServerError as exc:
             raise LLMError("unavailable", f"provider error {exc.status_code}") from exc
         except anthropic.APIStatusError as exc:
+            # Provider error text names the invalid field; it never echoes our key.
+            log.warning(
+                "llm_request_rejected", status=exc.status_code, message=str(exc.message)[:300]
+            )
             raise LLMError(
                 "bad_request",
                 f"request rejected ({exc.status_code})",

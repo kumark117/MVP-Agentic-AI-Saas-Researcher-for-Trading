@@ -197,3 +197,29 @@ def test_report_checks_and_assembly() -> None:
     )
     assert nosig["signal"] == "NO_SIGNAL" and not nosig["complete"]
     assert nosig["confidence"]["score"] is None and nosig["missing_evidence"]
+
+
+def test_structured_output_schemas_avoid_enum_in_type_unions() -> None:
+    """The Messages API rejects an enum inside a type list such as ["string", "null"]
+    (found by the first live run); nullable enums must use anyOf."""
+    from alloyiq.agents.schemas import BRANCH_FINDING_SCHEMA, SIGNAL_SCHEMA, TOOL_DEFS
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            if isinstance(node.get("type"), list):
+                assert "enum" not in node, node
+            if node.get("type") == "object":
+                assert node.get("additionalProperties") is False, node
+                assert set(node.get("required", [])) == set(node.get("properties", {})), node
+            for v in node.values():
+                walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+
+    for schema in (
+        SIGNAL_SCHEMA,
+        BRANCH_FINDING_SCHEMA,
+        *(t["input_schema"] for t in TOOL_DEFS.values()),
+    ):
+        walk(schema)

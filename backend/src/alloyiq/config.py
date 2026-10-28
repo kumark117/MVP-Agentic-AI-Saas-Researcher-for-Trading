@@ -108,4 +108,7 @@ def get_settings() -> Settings:
 def secret_or_none(value: SecretStr | None) -> str | None:
     """An empty env var (KEY=) means "not configured"; a SecretStr object is always truthy."""
     raw = value.get_secret_value().strip() if value is not None else ""
+    # Docker Compose reads "KEY=   # comment" as the value "# comment": treat it as unset.
+    if raw.startswith("#"):
+        return None
     return raw or None

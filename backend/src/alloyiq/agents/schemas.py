@@ -88,8 +88,11 @@ _LIST = {"type": "array", "items": _STR}
 SIGNAL_SCHEMA: dict[str, Any] = _obj(
     {
         "signal": {"type": "string", "enum": ["BUY", "SELL", "HOLD", "NO_SIGNAL"]},
-        "confidence_score": {"type": ["number", "null"]},
-        "confidence_label": {"type": ["string", "null"], "enum": ["low", "medium", "high", None]},
+        # Nullable fields use anyOf: the API rejects an enum inside a ["string", "null"] union.
+        "confidence_score": {"anyOf": [{"type": "number"}, {"type": "null"}]},
+        "confidence_label": {
+            "anyOf": [{"type": "string", "enum": ["low", "medium", "high"]}, {"type": "null"}]
+        },
         "summary": _STR,
         "supporting_evidence": _CLAIMS,
         "opposing_evidence": _CLAIMS,
