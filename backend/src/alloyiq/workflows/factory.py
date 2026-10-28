@@ -12,6 +12,7 @@ from alloyiq.adapters.artifacts import LocalArtifactStore
 from alloyiq.adapters.pg_listen import asyncpg_dsn
 from alloyiq.application.budget import BudgetService, SpendCaps
 from alloyiq.config import Settings, secret_or_none
+from alloyiq.domain.llm import LLMGateway
 from alloyiq.repositories.db import Database
 from alloyiq.tools.gateway import MCPToolGateway
 from alloyiq.workflows.graph import ResearchWorkflow
@@ -58,8 +59,15 @@ class PostgresCheckpointer:
 
 def build_workflow(settings: Settings, db: Database) -> RunExecutor:
     key = secret_or_none(settings.anthropic_api_key)
-    if key is None:
+    gateway: LLMGateway
+    if settings.llm_mode == "fake":
+        from alloyiq.adapters.fake_llm import FakeLLMGateway
+
+        gateway = FakeLLMGateway()  # SYNTHETIC output for e2e journeys; refused in prod
+    elif key is None:
         return UnavailableWorkflow("ANTHROPIC_API_KEY is not configured")
+    else:
+        gateway = AnthropicLLMGateway(key)
     if not settings.database_worker_url:
         return UnavailableWorkflow("DATABASE_WORKER_URL is not configured")
     tools = MCPToolGateway(settings.mcp_url, settings.mcp_service_token.get_secret_value())
@@ -69,7 +77,7 @@ def build_workflow(settings: Settings, db: Database) -> RunExecutor:
         settings.real_spend_platform_day_usd,
     )
     return ResearchWorkflow(
-        gateway=AnthropicLLMGateway(key),
+        gateway=gateway,
         tool_sessions=tools.session,
         artifacts=LocalArtifactStore(settings.artifact_dir),
         budget=BudgetService(caps),

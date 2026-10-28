@@ -5,7 +5,7 @@ R003,in,application.research; frontend features/research,POST /research/estimate
 R004,in,domain (Signal; confidence); agents.SignalAgent,GET /research/runs/{id}/report,,P6; calibration_status=uncalibrated always in MVP
 R005,in,adapters.DummyPaymentProvider; billing,payment_mode=simulated on all billing responses,,P4; no card/bank/UPI fields exist anywhere
 R006,partial,domain (roles); cli.admin,,,member + platform_admin only; admin via CLI; no MFA (DV-02)
-R007,in,frontend,all screens,,P7; axe + keyboard Playwright checks; WCAG 2.2 AA target
+R007,in,frontend,frontend a11y (WCAG 2.2 AA target),frontend/e2e/a11y.spec.ts (axe desktop + mobile; keyboard-only),"P7; automated checks only, no manual audit yet"
 R008,in,application.auth,/auth/register /auth/verify-email /auth/login /auth/logout /auth/forgot-password /auth/reset-password /me/password /me/deletion-requests,backend/tests/integration/test_auth_api.py; test_email_dispatch.py,P2
 R009,deferred,,,,Google OIDC (DV-01); auth_identities table kept
 R010,in,application.auth; repositories.sessions,GET /me/sessions,backend/tests/integration/test_auth_api.py::test_two_devices_and_per_session_revocation,P2; multi-device run visibility proven in P5/P7
@@ -26,10 +26,10 @@ R024,in,domain (run state machine),GET /research/runs/{id},backend/tests/unit/te
 R025,in,application.research (cancel); worker,POST /research/runs/{id}/cancel,backend/tests/integration/test_runs.py::test_cancel_during_parallel_branches; ::test_cancel_versus_success_race_has_one_outcome,P5
 R026,in,worker (cancel watcher),POST /research/runs/{id}/cancel,backend/tests/integration/test_runs.py::test_cancel_during_parallel_branches (latencies recorded),"P5; p95 measured per run, not load-tested (DV-06)"
 R027,in,application.research; worker scheduler,429 PLAN_LIMIT_REACHED,,P5
-R028,partial,frontend,all member screens,,P7; privileged admin screens deferred (DV-03)
-R029,in,frontend RunStatus/ActivityPanel; workflows,GET /research/runs/{id}/activity; activity.appended,,P6/P7; no chain-of-thought
-R030,in,frontend ReportPanel; agents.SignalAgent,GET /research/runs/{id}/report,,P6/P7
-R031,in,frontend about/,/about,,P9 content; opens in new tab
+R028,partial,frontend,frontend (all member screens),frontend/e2e/journeys.spec.ts; frontend/e2e/a11y.spec.ts,P7; history/reports screens P8; admin screens deferred (DV-03)
+R029,in,frontend RunStatus/ActivityPanel; workflows,frontend runs/[runId] ActivityPanel,frontend/e2e/journeys.spec.ts,P7
+R030,in,frontend ReportPanel; agents.SignalAgent,frontend runs/[runId] ReportPanel; GET /research/runs/{id}/report,frontend/e2e/journeys.spec.ts; backend/tests/integration/test_graph.py; backend/tests/unit/test_research_validation.py,P6/P7; model text rendered as plain text only
+R031,in,frontend about/,frontend /about (opens in a new tab),frontend/e2e/a11y.spec.ts,P7
 R032,partial,application.wallet; application.billing,GET /account/balance; GET /account/ledger; GET /billing/invoices,backend/tests/integration/test_billing_api.py,P4 API done; screens in P7; subscriptions deferred (DV-04)
 R033,in,application.conversations,/conversations; /conversations/{id}/messages,,P8
 R034,in,application.history; application.exports,GET /research/runs; POST /exports,,P8

@@ -19,8 +19,9 @@ CREATE ROLE alloyiq_worker   LOGIN PASSWORD :'worker_pw'   NOSUPERUSER NOCREATED
 
 CREATE DATABASE alloyiq      OWNER alloyiq_migrator;
 CREATE DATABASE alloyiq_test OWNER alloyiq_migrator;
+CREATE DATABASE alloyiq_e2e  OWNER alloyiq_migrator;
 
 -- Only the application roles may connect.
-REVOKE ALL ON DATABASE alloyiq, alloyiq_test FROM PUBLIC;
-GRANT CONNECT ON DATABASE alloyiq, alloyiq_test TO alloyiq_api, alloyiq_worker, alloyiq_migrator;
+REVOKE ALL ON DATABASE alloyiq, alloyiq_test, alloyiq_e2e FROM PUBLIC;
+GRANT CONNECT ON DATABASE alloyiq, alloyiq_test, alloyiq_e2e TO alloyiq_api, alloyiq_worker, alloyiq_migrator;
 SQL

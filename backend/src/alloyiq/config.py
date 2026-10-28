@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     # Data providers. "fixtures" serves SYNTHETIC data only (tests, demos without keys);
     # it is refused in prod.
     provider_mode: Literal["live", "fixtures"] = "live"
+    # "fake" answers with FakeLLMGateway (SYNTHETIC responses and token counts) for e2e
+    # journeys without spending money; refused in prod like PROVIDER_MODE=fixtures.
+    llm_mode: Literal["live", "fake"] = "live"
     alphavantage_api_key: SecretStr | None = None
     tavily_api_key: SecretStr | None = None
     enable_yahoo_reference: bool = False
@@ -85,6 +88,10 @@ class Settings(BaseSettings):
     def check(self) -> None:
         if self.is_prod and self.session_secret.get_secret_value() == _DEV_SECRET:
             raise RuntimeError("SESSION_SECRET must be set in production")
+        if self.is_prod and self.llm_mode == "fake":
+            raise RuntimeError(
+                "LLM_MODE=fake (synthetic model output) is not allowed in production"
+            )
         if self.is_prod and self.provider_mode == "fixtures":
             raise RuntimeError(
                 "PROVIDER_MODE=fixtures (synthetic data) is not allowed in production"

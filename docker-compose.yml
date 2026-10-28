@@ -48,6 +48,7 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       NEXT_TELEMETRY_DISABLED: "1"
+      WATCHPACK_POLLING: "true"  # Windows bind mounts do not deliver file events
     volumes:
       - ./frontend:/app
       - web_node_modules:/app/node_modules

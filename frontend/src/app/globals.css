@@ -25,3 +25,19 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* Visible focus everywhere (WCAG 2.4.7 / 2.4.11). */
+:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

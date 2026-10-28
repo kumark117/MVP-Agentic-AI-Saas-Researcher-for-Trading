@@ -19,6 +19,8 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY src ./src
 RUN uv sync --frozen --no-dev
 
+# The artifacts volume inherits this ownership when it is first created.
+RUN mkdir -p /app/data/artifacts && chown -R alloyiq:alloyiq /app/data
 USER alloyiq
 EXPOSE 8000
 CMD ["uvicorn", "alloyiq.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

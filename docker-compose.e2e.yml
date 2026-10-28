@@ -1,0 +1,17 @@
+# End-to-end journeys (scripts/e2e.ps1): the same stack on a separate database, with
+# SYNTHETIC providers and model output, so browser tests never spend real money.
+# PROVIDER_MODE=fixtures and LLM_MODE=fake are both refused when APP_ENV=prod.
+x-e2e-env: &e2e-env
+  DATABASE_URL: postgresql+asyncpg://alloyiq_api:${ALLOYIQ_API_DB_PASSWORD}@postgres:5432/alloyiq_e2e
+  DATABASE_WORKER_URL: postgresql+asyncpg://alloyiq_worker:${ALLOYIQ_WORKER_DB_PASSWORD}@postgres:5432/alloyiq_e2e
+  DATABASE_MIGRATOR_URL: postgresql+asyncpg://alloyiq_migrator:${ALLOYIQ_MIGRATOR_DB_PASSWORD}@postgres:5432/alloyiq_e2e
+  PROVIDER_MODE: fixtures
+  LLM_MODE: fake
+
+services:
+  api:
+    environment: *e2e-env
+  worker:
+    environment: *e2e-env
+  mcp:
+    environment: *e2e-env

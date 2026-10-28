@@ -392,3 +392,43 @@ From build prompt §21, plus anything found while building.
 - **Not yet done (owner decision):** no live Claude run has been made. The P6 exit
   criterion "one live end-to-end run" needs `ANTHROPIC_API_KEY`, an enabled instrument
   (catalog-verify with live data keys) and the owner's approval (LIVE_PROVIDER_TESTS=1).
+
+## ADR-017 Frontend architecture and e2e harness (accepted, P7)
+
+- **Rendering:** route pages are thin server components that render client features.
+  Data is fetched in the browser with TanStack Query over `openapi-fetch` typed from the
+  committed contract. Next 16 Cache Components is on: the root layout renders dynamically
+  (`connection()` inside Suspense) so each request gets a CSP nonce, and routes that read
+  params wrap their client view in Suspense.
+- **CSP:** `src/proxy.ts` sends a per-request nonce policy (`script-src 'self'
+  'nonce-…' 'strict-dynamic'`, `style-src 'self' 'nonce-…'`, `connect-src 'self'`,
+  `frame-ancestors 'none'`, `object-src 'none'`), plus `Referrer-Policy: no-referrer`
+  and `nosniff`. No third-party hosts or fonts are used.
+- **API client:** same-origin with an HttpOnly session cookie. Mutations add `X-CSRF-Token`
+  and retry exactly once on `403 CSRF_FAILED`. Every problem+json response surfaces as
+  `ApiError` with its stable code. Idempotency keys are created once per user intent and
+  reused across retries (start research, top-up, simulate, refund), so double clicks and
+  lost responses never act twice.
+- **Live updates:** `StreamController` (Vitest-covered) deduplicates by event_id, backs off
+  with jitter from 1 to 30 s, and resumes with `?after=` (EventSource sends `Last-Event-ID`
+  itself). After repeated failures it makes an authenticated snapshot read to tell an
+  expired session (redirect to login) from an expired cursor (reopen from the snapshot).
+  It resyncs on `stream.reset_required` and never reconnects forever. An account-level
+  stream invalidates the balance, run and session queries on every device.
+- **Model text** renders as plain paragraphs and never as HTML. External links use
+  `rel="noopener noreferrer nofollow"`. Every demo amount is labelled "(simulated)", and
+  real provider cost is labelled "real" with its cost status.
+- **Accessibility:** skip link; labelled controls; visible `:focus-visible` ring;
+  `prefers-reduced-motion`; errors prefixed in text, not shown by colour alone; one polite,
+  throttled `aria-live` region for progress summaries. Responsive panels.
+- **E2E:** `scripts/e2e.ps1` switches the stack to database `alloyiq_e2e` with
+  `PROVIDER_MODE=fixtures` and `LLM_MODE=fake` (both refused in prod), so journeys spend
+  nothing. It enables the reference instruments there only, then restores the dev stack.
+  Playwright covers register, verify (Mailpit API), research, live watch, report, reload
+  reconnect, a second browser, cancel, a double-clicked top-up giving exactly one credit,
+  session revocation from a second browser, axe (WCAG 2.2 AA tags; desktop and mobile)
+  and a keyboard-only pass on the research form.
+- **Ops fixes found by e2e:** the image pre-creates `/app/data/artifacts` owned by the app
+  user (a new named volume inherits it), and the Next dev server polls for file changes on
+  Windows bind mounts (`WATCHPACK_POLLING`).
+- History and Reports screens are placeholders until P8.
