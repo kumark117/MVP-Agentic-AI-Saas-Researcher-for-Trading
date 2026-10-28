@@ -160,6 +160,8 @@ def main(argv: list[str] | None = None) -> int:
         finally:
             await db.dispose()
 
+    if sys.platform == "win32":  # psycopg async (checkpointer) needs a selector loop
+        return asyncio.run(run(), loop_factory=asyncio.SelectorEventLoop)
     return asyncio.run(run())
 
 

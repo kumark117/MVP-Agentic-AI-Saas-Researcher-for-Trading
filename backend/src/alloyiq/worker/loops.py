@@ -15,6 +15,7 @@ from alloyiq.application.budget import BudgetService, SpendCaps
 from alloyiq.application.email_dispatch import EmailDispatcher
 from alloyiq.application.exports import ExportService
 from alloyiq.application.lifecycle import RunLifecycle
+from alloyiq.application.purge import PurgeService
 from alloyiq.application.recovery import RecoverySweeper
 from alloyiq.application.settlement import SettlementService
 from alloyiq.application.wallet import WalletService
@@ -83,11 +84,9 @@ def build_worker(settings: Settings, worker_id: str) -> WorkerParts:
         concurrency=settings.worker_concurrency,
     )
     sweeper = RecoverySweeper(db, lifecycle)
-    exports = ExportService(
-        db,
-        LocalArtifactStore(settings.artifact_dir),
-        secret=settings.session_secret.get_secret_value(),
-    )
+    artifacts = LocalArtifactStore(settings.artifact_dir)
+    exports = ExportService(db, artifacts, secret=settings.session_secret.get_secret_value())
+    purge = PurgeService(db, lifecycle, artifacts)
 
     async def jobs(stop: asyncio.Event) -> None:
         await listener.start()
@@ -101,6 +100,7 @@ def build_worker(settings: Settings, worker_id: str) -> WorkerParts:
             ("pending_hold_release", wallet.release_due_pending, 300.0),
             ("recovery_sweeper", sweeper.sweep, 15.0),
             ("exports", exports.process_pending, 2.0),
+            ("retention_purge", purge.run_once, 3600.0),
         ],
         daemons=[("jobs", jobs)],
         cleanup=[listener.stop, db.dispose],

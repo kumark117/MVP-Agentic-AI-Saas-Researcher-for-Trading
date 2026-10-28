@@ -212,3 +212,63 @@ async def reconcile(db: Database, ns: argparse.Namespace) -> int:
         )
     _out({"wallets_checked": len(accounts), "problems": problems})
     return 0 if not problems else 1
+
+
+# ------------------------------------------------------------------ evaluation (R069-R070)
+def _eval_args(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--dataset", default="v1")
+    p.add_argument("--case", action="append", help="run only these case ids")
+    p.add_argument(
+        "--live",
+        action="store_true",
+        help="real providers and Claude for live_ok cases (needs LIVE_PROVIDER_TESTS=1)",
+    )
+
+
+@command("eval", "Run the evaluation set and record scores (offline = synthetic)", _eval_args)
+async def eval_cmd(db: Database, ns: argparse.Namespace) -> int:
+    import os
+    import tempfile
+
+    from alloyiq.adapters.artifacts import LocalArtifactStore
+    from alloyiq.config import get_settings, secret_or_none
+    from alloyiq.evaluations.harness import EvalHarness, load_dataset
+    from alloyiq.workflows.factory import PostgresCheckpointer, checkpoint_dsn
+
+    settings = get_settings()
+    url = os.environ.get("DATABASE_MIGRATOR_URL") or os.environ.get("ALEMBIC_DATABASE_URL") or ""
+    live_gateway = live_tools = None
+    if ns.live:
+        if os.environ.get("LIVE_PROVIDER_TESTS") != "1":
+            print(
+                "Refusing: --live spends real money; set LIVE_PROVIDER_TESTS=1 with owner approval."
+            )
+            return 3
+        from alloyiq.adapters.anthropic_gateway import AnthropicLLMGateway
+        from alloyiq.tools.gateway import MCPToolGateway
+
+        key = secret_or_none(settings.anthropic_api_key)
+        if not key:
+            print("ANTHROPIC_API_KEY is not configured")
+            return 2
+        live_gateway = AnthropicLLMGateway(key)
+        live_tools = MCPToolGateway(settings.mcp_url, settings.mcp_service_token.get_secret_value())
+    harness = EvalHarness(
+        db,
+        artifacts=LocalArtifactStore(tempfile.mkdtemp(prefix="alloyiq-eval-")),
+        checkpointer=PostgresCheckpointer(checkpoint_dsn(url)),
+        live_gateway=live_gateway,
+        live_tools=live_tools,
+    )
+    s = await harness.run(load_dataset(ns.dataset), case_ids=ns.case)
+    _out(
+        {
+            "evaluation_run_id": str(s.run_id),
+            "cases": s.cases,
+            "checks": {k: f"{p}/{n}" for k, (p, n) in s.by_check.items()},
+            "citation_support": round(s.citation_support, 4),
+            "release_gates_passed": s.gates_passed,
+            "failures": s.failures,
+        }
+    )
+    return 0 if s.gates_passed else 1

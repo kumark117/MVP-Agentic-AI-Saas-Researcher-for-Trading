@@ -469,3 +469,40 @@ From build prompt §21, plus anything found while building.
   the Redis rate-limit buckets (Redis holds nothing durable, ADR-005), and the helpers
   back off when the API's registration rate limit answers 429. A balance event now also
   refreshes the ledger and receipts.
+
+## ADR-019 Hardening, retention and evaluation (accepted, P9)
+
+- **Retention purge** (worker, hourly, system scope): run and account events past 30 days,
+  expired idempotency records, outbox older than 7 days, stale auth tokens and sessions
+  ended over 30 days ago, and 90-day activity (tool calls, validation verdicts, evidence and
+  their citations, run nodes). Ephemeral artifacts expire after 7 days and activity
+  artifacts after 90; an artifact file is removed once no live row uses its hash.
+- **Account deletion** runs when the request falls due (7-day grace). It cancels queued
+  runs, revokes sessions and deletes conversations, messages, feedback, reports, evidence,
+  activity, events and email outbox. Exports and artifacts are expired. The user is
+  pseudonymised (`deleted+<hash>@deleted.invalid`), the account is marked deleted, and
+  tombstones are written per subject table so a restore can re-apply the deletion. Demo
+  ledger and usage rows stay under their own retention (DV-12). Migration 0005 lets a
+  **system-scope** DELETE pass the messages immutability trigger; UPDATE is still rejected
+  for everyone.
+- **Outages:** with Redis down, rate limiting falls back to a stricter in-process limiter
+  (it never fails open) and caches miss, while admission, settlement and SSE replay keep
+  working from PostgreSQL. With LangSmith down, traces are buffered in `trace_outbox` and
+  the run shows `observability_gap`. All of this is covered by tests.
+- **Evaluation:** `evaluations/datasets/v1/cases.yaml` has 37 cases covering every
+  instrument and horizon, closed and stale markets, missing bars, unit, price and timestamp
+  errors, provider timeouts and rate limits, contradictory or absent news, injection (with
+  an unapproved tool request), refusal, max_tokens, interrupted streams, ungrounded numbers
+  with and without a successful repair, and a supported HOLD. `alloyiq-admin eval` runs
+  each case through the real graph and scores schema, citation support, numeric grounding,
+  signal semantics, adversarial blocks, missing-evidence reporting, repair, outcome and
+  abstention policy, writing `evaluation_runs` / `evaluation_scores` with dataset, prompt,
+  graph and evaluator versions. Release gates: 100% on schema, numeric grounding and
+  adversarial checks, and at least 95% citation support. Offline result: 37/37 on every
+  check. `--live` (owner approval) runs the `live_ok` cases on Claude and real providers.
+- **Operator CLI:** `summary` (platform view, DV-05), `runs --account`, `audit`,
+  `suspend [--lift]`, plus the earlier billing, rate-card, catalogue and eval commands. On
+  Windows the CLI uses a selector event loop (needed by psycopg async).
+- **Runbook:** `docs/ops/runbook.md` covers daily checks, provider outages, spend caps,
+  stuck runs, database backup and restore, Redis, billing, security events, deletion and
+  rate-card activation.

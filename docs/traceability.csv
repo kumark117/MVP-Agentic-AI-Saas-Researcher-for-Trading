@@ -1,9 +1,9 @@
 r_id,mvp_status,module,route_or_event,test_evidence,notes
 R001,in,docs/traceability.csv; docs/deviations.md,,,Process: every MUST has owner + evidence + status; maintained every phase
 R002,in,(whole repo),,,Built from specs only; no four-agent code reused (build prompt section 1)
-R003,in,application.research; frontend features/research,POST /research/estimates; POST /research/runs; GET /research/runs/{id}/report,,P5-P7
-R004,in,domain (Signal; confidence); agents.SignalAgent,GET /research/runs/{id}/report,,P6; calibration_status=uncalibrated always in MVP
-R005,in,adapters.DummyPaymentProvider; billing,payment_mode=simulated on all billing responses,,P4; no card/bank/UPI fields exist anywhere
+R003,in,application.research; frontend features/research,POST /research/estimates; POST /research/runs,backend/tests/integration/test_runs.py; frontend/e2e/journeys.spec.ts,P5-P7
+R004,in,domain (Signal; confidence); agents.SignalAgent,GET /research/runs/{id}/report,backend/tests/unit/test_research_validation.py::test_report_checks_and_assembly; backend/tests/integration/test_graph.py,P6; calibration_status=uncalibrated always in MVP
+R005,in,adapters.DummyPaymentProvider; billing,/billing/*,backend/tests/integration/test_billing_api.py; frontend/e2e/journeys.spec.ts::double-clicked top-up gives exactly one credit,P4; no card/bank/UPI fields exist anywhere
 R006,partial,domain (roles); cli.admin,,,member + platform_admin only; admin via CLI; no MFA (DV-02)
 R007,in,frontend,frontend a11y (WCAG 2.2 AA target),frontend/e2e/a11y.spec.ts (axe desktop + mobile; keyboard-only),"P7; automated checks only, no manual audit yet"
 R008,in,application.auth,/auth/register /auth/verify-email /auth/login /auth/logout /auth/forgot-password /auth/reset-password /me/password /me/deletion-requests,backend/tests/integration/test_auth_api.py; test_email_dispatch.py,P2
@@ -25,12 +25,12 @@ R023,in,application.budget; adapters.AnthropicLLMGateway,worker graph,backend/te
 R024,in,domain (run state machine),GET /research/runs/{id},backend/tests/unit/test_run_state.py; backend/tests/integration/test_runs.py,P5
 R025,in,application.research (cancel); worker,POST /research/runs/{id}/cancel,backend/tests/integration/test_runs.py::test_cancel_during_parallel_branches; ::test_cancel_versus_success_race_has_one_outcome,P5
 R026,in,worker (cancel watcher),POST /research/runs/{id}/cancel,backend/tests/integration/test_runs.py::test_cancel_during_parallel_branches (latencies recorded),"P5; p95 measured per run, not load-tested (DV-06)"
-R027,in,application.research; worker scheduler,429 PLAN_LIMIT_REACHED,,P5
-R028,partial,frontend,frontend (all member screens),frontend/e2e/journeys.spec.ts; frontend/e2e/a11y.spec.ts,P7; history/reports screens P8; admin screens deferred (DV-03)
+R027,in,application.research; worker scheduler,queue expiry; per-member limits,backend/tests/integration/test_runs.py::test_queue_expiry_and_dead_jobs; ::test_plan_limit_on_queued_runs,P5
+R028,partial,frontend,frontend (all member screens),frontend/e2e/journeys.spec.ts; frontend/e2e/a11y.spec.ts,P7-P8; admin screens deferred (DV-03)
 R029,in,frontend RunStatus/ActivityPanel; workflows,frontend runs/[runId] ActivityPanel,frontend/e2e/journeys.spec.ts,P7
 R030,in,frontend ReportPanel; agents.SignalAgent,frontend runs/[runId] ReportPanel; GET /research/runs/{id}/report,frontend/e2e/journeys.spec.ts; backend/tests/integration/test_graph.py; backend/tests/unit/test_research_validation.py,P6/P7; model text rendered as plain text only
 R031,in,frontend about/,frontend /about (opens in a new tab),frontend/e2e/a11y.spec.ts,P7
-R032,partial,application.wallet; application.billing,GET /account/balance; GET /account/ledger; GET /billing/invoices,backend/tests/integration/test_billing_api.py,P4 API done; screens in P7; subscriptions deferred (DV-04)
+R032,partial,application.wallet; application.billing,GET /account/balance; GET /account/ledger; GET /billing/invoices,backend/tests/integration/test_billing_api.py; frontend/e2e/journeys.spec.ts,P4/P7; subscriptions deferred (DV-04)
 R033,in,application.conversations,/conversations; /conversations/{id}/messages; POST/PUT /research/runs/{id}/feedback,backend/tests/integration/test_history_reports.py::test_conversation_messages_are_deduplicated_and_isolated; ::test_follow_up_only_after_previous_run_is_terminal_and_feedback,P8
 R034,in,application.history; application.exports,"GET /research/runs (filters, cursor); POST /exports","backend/tests/integration/test_history_reports.py; frontend/e2e/journeys.spec.ts::history, re-run, reports and export",P8
 R035,in,application.exports; security (CSV neutraliser),POST /exports; GET /exports/{id}; GET /exports/{id}/download,backend/tests/integration/test_history_reports.py::test_exports_are_signed_owned_neutralised_and_expire; backend/tests/unit/test_stats_and_csv.py,P8
@@ -39,36 +39,36 @@ R037,partial,application.billing,POST /billing/credit-checkouts; POST /billing/r
 R038,in,billing.posting; repositories.ledger; application.wallet,GET /account/balance; GET /account/ledger,backend/tests/integration/test_wallet_ledger.py (Hypothesis concurrent admissions; settlement idempotency); backend/tests/unit/test_billing_rules.py; backend/tests/integration/test_db_invariants.py,P4
 R039,in,billing.rates; cli.admin_billing (rate-card-activate),GET /catalog/prices,backend/tests/unit/test_billing_rules.py; backend/tests/integration/test_admin_billing.py::test_rate_card_activation_requires_confirmation; backend/tests/integration/test_db_invariants.py::test_active_rate_card_is_frozen,P4; rate card v1 stays draft until OD-3
 R040,in,adapters.AnthropicLLMGateway; billing,GET /research/runs/{id}/usage,backend/tests/integration/test_graph.py::test_interrupted_stream_is_unknown_never_fabricated; backend/tests/unit/test_billing_rules.py,P6; cost_status=calculated only (DV-07)
-R041,in,application.reports; billing,GET /research/runs/{id}/usage; GET /reports/summary,,P6/P8
+R041,in,application.reports; billing,GET /research/runs/{id}/usage; GET /reports/summary,backend/tests/integration/test_graph.py; backend/tests/integration/test_history_reports.py,P6/P8
 R042,in,application.budget,admission + per-call checks,backend/tests/integration/test_wallet_ledger.py::test_budget_caps_and_settlement; ::test_demo_credit_cannot_raise_real_caps,P4 service; wired into admission in P5 and per call in P6
-R043,partial,application.reconciliation; worker scheduler,,,P5 24 h hold release; invoice reconciliation deferred (DV-07)
-R044,partial,application.reports,GET /reports/summary; GET /reports/models,,P8; platform summary via CLI (DV-05)
-R045,in,stats; application.reports,GET /reports/summary,,P8
-R046,in,stats (percentiles),GET /reports/summary,,P8; percentile_cont; null on empty; warn below 100
-R047,in,stats (success rate),GET /reports/summary,,P8
-R048,in,application.reports,GET /reports/summary,,P8; 90-day sync cap; 30 s cache; window basis per metric
+R043,partial,application.reconciliation; worker scheduler,settlement; 24 h pending release,backend/tests/integration/test_runs.py::test_ambiguous_call_is_unknown_and_platform_absorbed; backend/tests/integration/test_wallet_ledger.py::test_unknown_usage_keeps_a_bounded_pending_hold,P5; invoice reconciliation deferred (DV-07)
+R044,partial,application.reports,GET /reports/summary; GET /reports/models; alloyiq-admin summary,backend/tests/integration/test_history_reports.py::test_summary_reports_known_percentiles_and_populations,P8-P9; platform summary via CLI (DV-05)
+R045,in,stats; application.reports,GET /reports/summary,backend/tests/integration/test_history_reports.py,P8
+R046,in,stats (percentiles),GET /reports/summary,backend/tests/unit/test_stats_and_csv.py; backend/tests/integration/test_history_reports.py,P8; percentile_cont; null on empty; warn below 100
+R047,in,stats (success rate),GET /reports/summary,backend/tests/unit/test_stats_and_csv.py::test_success_rate_excludes_cancellations_and_queue_expiry,P8
+R048,in,application.reports,GET /reports/summary,backend/tests/integration/test_history_reports.py,P8; 90-day sync cap; 30 s cache; window basis per metric
 R049,in,security; api schemas; tools,worker graph,backend/tests/unit/test_research_validation.py,P6
 R050,in,security (taint); agents prompts,worker graph,backend/tests/integration/test_graph.py::test_injection_article_is_quarantined; backend/tests/unit/test_research_validation.py,P6
 R051,in,security validators; workflows (handoff_validation),worker graph,backend/tests/integration/test_graph.py::test_unapproved_tool_request_is_refused_by_policy,P6
 R052,in,mcp_server; security (egress),worker graph,backend/tests/unit/test_research_validation.py::test_usd_per_oz_mixed_with_inr_per_kg_is_blocked_without_fx,P6
 R053,in,observability; repositories (audit_events),,backend/tests/integration/test_db_invariants.py (immutable audit/ledger),P1 tables; P2 onward audit writes
-R054,partial,worker (purge); application.deletion,POST /me/deletion-requests,backend/tests/integration/test_schema.py::test_every_table_documents_a_retention_class,P9; third-party trace deletion deferred (DV-10)
-R055,partial,docs/ops,,,P9; restore drills deferred (DV-10)
-R056,in,worker (leases; fencing; recovery sweeper),,,P5
+R054,partial,application.purge; worker retention_purge,POST /me/deletion-requests; hourly purge,backend/tests/integration/test_hardening.py::test_account_deletion_purges_content_and_keeps_financial_records; ::test_retention_purge_removes_only_expired_rows,P9; third-party trace deletion deferred (DV-10)
+R055,partial,application.purge (tombstones); docs/ops/runbook.md,tombstones,backend/tests/integration/test_hardening.py,P9; restore drills deferred (DV-10)
+R056,in,worker (leases; fencing; recovery sweeper),worker,backend/tests/integration/test_runs.py::test_killed_worker_is_recovered_without_double_charge,P5
 R057,in,adapters (deadlines; retries; circuit breakers),,backend/tests/integration/test_tools.py::test_timeout_and_retries,P3/P6
 R058,partial,observability (TraceSink; LangSmith),worker tracing,backend/tests/integration/test_graph.py::test_failed_trace_export_is_buffered_and_flagged,P6; LangSmith optional (DV-09)
-R059,deferred,docs/ops,,,DV-06; runbook-lite in P9
+R059,deferred,docs/ops,docs/ops,docs/ops/runbook.md,DV-06; runbook in P9
 R060,deferred,docs/ops,,,DV-06
 R061,deferred,docs/ops,,,DV-06
 R062,deferred,docs/ops,,,DV-06
 R063,deferred,docs/ops,,,DV-06
 R064,in,api (envelope; errors; middleware),/api/v1/*,backend/tests/unit/test_health.py; backend/tests/contract/test_contracts.py,P0 shell: {data;meta} envelope + problem+json + UUID request IDs; full registry P1+
-R065,in,api (idempotency),Idempotency-Key routes,,P5 and later
+R065,in,api (idempotency),Idempotency-Key routes,backend/tests/integration/test_runs.py::test_admission_is_atomic_and_idempotent; backend/tests/integration/test_billing_api.py; backend/tests/integration/test_history_reports.py,P4-P8
 R066,in,api SSE; frontend lib/sse/StreamController,GET /research/runs/{id}/events; GET /events,backend/tests/integration/test_sse.py,P5
 R067,in,(whole repo),,,ADR-001: Next.js + OO Python + LangGraph + MCP + PostgreSQL + LangSmith
-R068,partial,backend/tests; frontend tests; scripts/test.ps1,,scripts/test.ps1,P0 harness in place; suites grow each phase
-R069,partial,evaluations,,,P9; 30+ cases (DV-08)
-R070,partial,evaluations; scripts/test.ps1,,,P9; gates on reduced set (DV-08)
+R068,partial,backend/tests; frontend tests; scripts/test.ps1,scripts/test.ps1; scripts/e2e.ps1,backend 240+ tests; frontend Vitest; Playwright 9 journeys,P0-P9; load and restore tests deferred (DV-06)
+R069,partial,evaluations,alloyiq-admin eval,backend/src/alloyiq/evaluations/datasets/v1/cases.yaml (37 cases); backend/tests/integration/test_hardening.py::test_evaluation_harness_scores_and_gates,"P9; 37 cases, not 200 (DV-08)"
+R070,partial,evaluations; scripts/test.ps1,alloyiq-admin eval (release gates),backend/tests/integration/test_hardening.py::test_evaluation_harness_scores_and_gates,P9; gates on 37 synthetic cases; live judge optional (DV-08)
 R071,partial,docs,,,Capacity and recovery drills deferred (DV-06)
 R072,in,docs/decisions.md (open decisions),,,Tracked as OD-1..OD-9; nothing invented
 R073,in,docs/deviations.md,,,Live payments/teams/scheduling out of scope

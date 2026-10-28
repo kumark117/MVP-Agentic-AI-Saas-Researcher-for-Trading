@@ -37,6 +37,18 @@ class LocalArtifactStore:
     def _path(self, sha: str) -> Path:
         return self.root / sha[:2] / sha
 
+    async def remove(self, sha: str) -> int:
+        """Delete the file for a content hash no live artifact row uses (retention)."""
+        path = self._path(sha)
+
+        def unlink() -> int:
+            if path.exists():
+                path.unlink()
+                return 1
+            return 0
+
+        return await asyncio.to_thread(unlink)
+
     async def put(
         self,
         conn: AsyncConnection,

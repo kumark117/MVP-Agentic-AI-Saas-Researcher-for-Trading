@@ -8,7 +8,9 @@ in parallel, and a Signal agent writes a cited report (BUY / SELL / HOLD / NO_SI
 - **Model and data costs are real**, measured, and capped by spend limits that demo credit cannot raise.
 
 Specs: `docs/specs/` (Requirements v2 R001-R074, Design v2, and the MVP build prompt).
-Status: **Phase 0 (bootstrap)**. See `docs/traceability.csv` and `docs/deviations.md`.
+Status: **MVP build complete (P0-P9)**, pending the owner's live checks: catalogue verification
+with real data keys, rate-card price verification, and one live research run. See
+`docs/traceability.csv`, `docs/deviations.md`, `docs/decisions.md` and `docs/ops/runbook.md`.
 
 ## Prerequisites (Windows 11)
 
@@ -44,6 +46,11 @@ Windows for faster reloads (ADR-008).
 scripts\test.ps1                 # backend + frontend + security scans
 scripts\test.ps1 -Only backend
 scripts\test.ps1 -SkipSecurity
+```
+
+```powershell
+scripts\e2e.ps1                  # Playwright journeys on a separate SYNTHETIC stack (no cost)
+docker compose exec api alloyiq-admin eval      # 37-case evaluation, offline and synthetic
 ```
 
 Tests never call paid providers unless `LIVE_PROVIDER_TESTS=1` is set and the owner agrees.
