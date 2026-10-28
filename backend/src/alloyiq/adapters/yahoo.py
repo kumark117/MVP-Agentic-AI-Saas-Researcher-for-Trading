@@ -66,9 +66,13 @@ def frame_to_bars(frame: Any) -> list[Bar]:
 class YahooFinanceClient:
     name = SOURCE
 
-    def __init__(self, enabled: bool, timeout_s: float = 8.0) -> None:
+    def __init__(self, enabled: bool, timeout_s: float = 3.0) -> None:
+        # Per attempt, shorter than the 8 s tool deadline so a stalled call can be retried.
         self.enabled = enabled
         self.timeout_s = timeout_s
+        # yfinance shares session and cookie state across threads and is not safe to call
+        # concurrently; parallel branches would otherwise stall each other (observed live).
+        self._lock = asyncio.Lock()
 
     def _check(self, symbol: str) -> None:
         if not self.enabled:
@@ -95,7 +99,8 @@ class YahooFinanceClient:
             )
 
         try:
-            frame = await asyncio.wait_for(asyncio.to_thread(call), timeout=self.timeout_s)
+            async with self._lock:
+                frame = await asyncio.wait_for(asyncio.to_thread(call), timeout=self.timeout_s)
         except TimeoutError as exc:
             raise ProviderError("PROVIDER_UNAVAILABLE", "Yahoo timed out", retryable=True) from exc
         except Exception as exc:

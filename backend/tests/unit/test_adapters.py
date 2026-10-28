@@ -220,3 +220,59 @@ async def test_yahoo_disabled_and_symbol_allowlist() -> None:
         await YahooFinanceClient(enabled=True).get_history(
             "AAPL", function="", interval="1d", start=datetime.now(UTC)
         )
+
+
+async def test_yahoo_calls_are_serialised_and_time_out_per_attempt(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """yfinance is not thread-safe: parallel branches must not call it concurrently."""
+    import sys
+    import threading
+    import time as _time
+    import types
+
+    import pandas as pd
+
+    from alloyiq.adapters.yahoo import YahooFinanceClient
+    from alloyiq.domain.ports import ProviderError
+
+    active, peak, lock = [0], [0], threading.Lock()
+
+    class Ticker:
+        def __init__(self, symbol: str) -> None:
+            self.symbol = symbol
+
+        def history(self, **_: object) -> pd.DataFrame:
+            with lock:
+                active[0] += 1
+                peak[0] = max(peak[0], active[0])
+            _time.sleep(0.05)
+            with lock:
+                active[0] -= 1
+            idx = pd.DatetimeIndex([pd.Timestamp("2026-10-27T10:00:00Z")])
+            return pd.DataFrame(
+                {"Open": [1.0], "High": [1.1], "Low": [0.9], "Close": [1.0], "Volume": [1]},
+                index=idx,
+            )
+
+    monkeypatch.setitem(sys.modules, "yfinance", types.SimpleNamespace(Ticker=Ticker))
+    client = YahooFinanceClient(enabled=True, timeout_s=2.0)
+    import asyncio
+    from datetime import UTC, datetime, timedelta
+
+    start = datetime.now(UTC) - timedelta(days=2)
+    await asyncio.gather(
+        *(client.get_history("GC=F", function="", interval="1d", start=start) for _ in range(4))
+    )
+    assert peak[0] == 1
+
+    class Slow(Ticker):
+        def history(self, **_: object) -> pd.DataFrame:
+            _time.sleep(0.5)
+            return super().history()
+
+    monkeypatch.setitem(sys.modules, "yfinance", types.SimpleNamespace(Ticker=Slow))
+    slow = YahooFinanceClient(enabled=True, timeout_s=0.1)
+    try:
+        await slow.get_history("GC=F", function="", interval="1d", start=start)
+        raise AssertionError("expected a timeout")
+    except ProviderError as exc:
+        assert exc.code == "PROVIDER_UNAVAILABLE" and exc.retryable
