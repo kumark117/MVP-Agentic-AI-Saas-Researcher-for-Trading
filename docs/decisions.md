@@ -334,3 +334,61 @@ From build prompt §21, plus anything found while building.
   `UnavailableWorkflow`, which fails runs explicitly with `workflow_not_installed`; P6
   plugs in the LangGraph workflow. P5 tests drive a fake graph that writes clearly synthetic
   usage through the real call-intent protocol.
+
+## ADR-016 Research graph, Claude gateway and validation (accepted, P6)
+
+- **Gateway:** `AnthropicLLMGateway` uses the official `anthropic` SDK (AsyncAnthropic,
+  `max_retries=0`). It always sends adaptive thinking and an explicit `output_config.effort`;
+  structured output goes through `output_config.format` (json_schema) with strict tools and
+  `tool_choice: auto`. It sends no sampling parameters, no prefill and no forced tool choice.
+  The Signal call streams (time to first token comes from the first delta). An interrupted
+  stream raises `interrupted` and its usage stays unknown; nothing is estimated.
+- **Fallbacks:** the SDK's server-side `fallbacks` parameter is deliberately **not** used,
+  because `"default"` can route outside the estimate's approved model set (D096, R042). The
+  caller retries on refusal or 529 only with the next model in `approved_models`, sending
+  the identical request.
+- **ModelCaller policy**, checked before every call: cancel/deadline, 24 calls per run and 6
+  per branch, token budgets, an approved model, and a worst-case USD cost that fits the
+  remaining real-spend reservation. The worst-case input size uses a conservative
+  2.5 chars/token guard; that guard is never recorded as usage. Retries happen only before any
+  response bytes, at most once, honouring `retry-after`. Definitive rejections (400, 429,
+  overload) are recorded as failed and non-billable. Timeouts and dropped connections are
+  ambiguous: unknown usage, absorbed by the platform.
+- **Reuse on recovery:** call keys are deterministic per run, node, purpose and step. A
+  completed model or tool call is reused from its stored response in the ArtifactStore
+  (`llm:{key}`, `tool:{key}`), so a crash after a provider call never pays twice. A dangling
+  intent is retried only under a new `:r{generation}` key.
+- **Graph:** LangGraph `StateGraph` with `AsyncPostgresSaver` in schema `graph` (migration
+  0004; worker-only). One thread per run, and resume continues from the last checkpoint. Each
+  branch writes only its own state key. Checkpoints hold normalised evidence and findings;
+  raw payloads stay in the ArtifactStore.
+- **Tools:** the model chooses only which allowlisted tool to call, plus an optional news
+  `focus` that is validated and dropped if unsafe. The server builds the instrument and
+  horizon arguments. Any other tool name is refused by `PolicyEngine` and logged as a
+  validation failure and a security event.
+- **Evidence:** every evidence item gets a server-assigned UUID. Indicators produce one item
+  each, so each number can be cited. News is limited to 8 articles with short excerpts and is
+  scanned by injection heuristics (`security.injection`). A hit is quarantined: the item is
+  stored with taint flags, the model sees a redacted record, and a `security_events` row is
+  written. Untrusted text, including the member's question, is wrapped in
+  `<untrusted_evidence>`.
+- **Gates:** handoff validation blocks any unit other than the instrument's, and blocks a
+  foreign currency that has no FX evidence. The evidence minimum needs a non-stale quote,
+  the full indicator set for the horizon (ATR is exempt for reference series), and at
+  least one relevant, non-quarantined, cited article. If any is missing, the run ends
+  `incomplete` with a NO_SIGNAL report listing what was missing. The Signal agent is never
+  called in that case.
+- **Final validation:** schema, existing and non-quarantined citations, numbers grounded
+  within 0.5% (or an allowed token: dates, indicator periods, small counts), no URLs in the
+  prose, and directional signals must cite support. One repair is allowed, made non-billable
+  with the same rules. If it still fails, the run is incomplete with NO_SIGNAL.
+- **Tracing:** `LangSmithTraceSink` exports one tree per run (nodes plus Claude calls) with
+  allowlisted, non-personal metadata only. An export failure writes `trace_outbox` and sets
+  `observability_gap`. With no key, `LocalTraceSink` sets the gap, so a missing trace is
+  visible, never silent.
+- **Prompt caching** is requested only when the pinned card prices both cache read and cache
+  write (ADR-014). The prompts are stable files (`agents/prompts/*.md`, hashed into
+  `versions.prompt`).
+- **Not yet done (owner decision):** no live Claude run has been made. The P6 exit
+  criterion "one live end-to-end run" needs `ANTHROPIC_API_KEY`, an enabled instrument
+  (catalog-verify with live data keys) and the owner's approval (LIVE_PROVIDER_TESTS=1).

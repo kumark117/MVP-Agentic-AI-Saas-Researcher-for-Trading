@@ -212,7 +212,7 @@ class AuthRepository:
         await conn.execute(
             text(
                 "UPDATE sessions SET last_seen_at = :n, idle_expires_at = :i WHERE id = :s"
-                " AND last_seen_at < :n - make_interval(secs => :g)"
+                " AND last_seen_at < CAST(:n AS timestamptz) - make_interval(secs => :g)"
             ),
             {"s": session_id, "n": now, "i": idle_expires_at, "g": granularity_s},
         )

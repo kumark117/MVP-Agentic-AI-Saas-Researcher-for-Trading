@@ -19,9 +19,9 @@ R017,in,application.catalog; adapters,GET /catalog/instruments,backend/tests/int
 R018,in,application.research (estimate),POST /research/estimates,backend/tests/integration/test_runs.py::test_estimate_contract_and_validation,P5
 R019,in,application.research (admit),POST /research/runs,backend/tests/integration/test_runs.py::test_admission_is_atomic_and_idempotent; ::test_two_devices_racing_for_the_last_credit,P5
 R020,in,application.research; worker,POST /research/runs (Idempotency-Key),backend/tests/integration/test_runs.py::test_admission_is_atomic_and_idempotent,P5
-R021,in,workflows; agents,node.started; tool.completed,,P6
-R022,in,indicators; workflows (evidence_minimum_gate),get_technical_indicators,backend/tests/unit/test_indicators.py; test_tools.py::test_indicators_are_computed_server_side,P3 indicators; P6 gate
-R023,in,application.budget; adapters.AnthropicLLMGateway,limits in estimate,,P5/P6
+R021,in,workflows; agents,worker graph,backend/tests/integration/test_graph.py::test_happy_path_produces_a_cited_report,P6 (fake Claude); live run pending owner approval
+R022,in,indicators; workflows (evidence_minimum_gate),worker graph,backend/tests/integration/test_graph.py::test_missing_bars_end_as_honest_no_signal; backend/tests/unit/test_research_validation.py::test_evidence_minimum_gate,P6
+R023,in,application.budget; adapters.AnthropicLLMGateway,worker graph,backend/tests/integration/test_graph.py::test_max_tokens_on_a_branch_gets_one_repair; ::test_report_that_never_validates_is_incomplete,P6
 R024,in,domain (run state machine),GET /research/runs/{id},backend/tests/unit/test_run_state.py; backend/tests/integration/test_runs.py,P5
 R025,in,application.research (cancel); worker,POST /research/runs/{id}/cancel,backend/tests/integration/test_runs.py::test_cancel_during_parallel_branches; ::test_cancel_versus_success_race_has_one_outcome,P5
 R026,in,worker (cancel watcher),POST /research/runs/{id}/cancel,backend/tests/integration/test_runs.py::test_cancel_during_parallel_branches (latencies recorded),"P5; p95 measured per run, not load-tested (DV-06)"
@@ -38,7 +38,7 @@ R036,in,adapters.payments.DummyPaymentProvider; application.billing,POST /billin
 R037,partial,application.billing,POST /billing/credit-checkouts; POST /billing/refund-requests,backend/tests/integration/test_billing_api.py::test_checkout_limits; ::test_refund_reverses_demo_credit_only,P4; subscription changes deferred (DV-04)
 R038,in,billing.posting; repositories.ledger; application.wallet,GET /account/balance; GET /account/ledger,backend/tests/integration/test_wallet_ledger.py (Hypothesis concurrent admissions; settlement idempotency); backend/tests/unit/test_billing_rules.py; backend/tests/integration/test_db_invariants.py,P4
 R039,in,billing.rates; cli.admin_billing (rate-card-activate),GET /catalog/prices,backend/tests/unit/test_billing_rules.py; backend/tests/integration/test_admin_billing.py::test_rate_card_activation_requires_confirmation; backend/tests/integration/test_db_invariants.py::test_active_rate_card_is_frozen,P4; rate card v1 stays draft until OD-3
-R040,in,adapters.AnthropicLLMGateway; billing,GET /research/runs/{id}/usage,,P6; cost_status=calculated only (DV-07)
+R040,in,adapters.AnthropicLLMGateway; billing,GET /research/runs/{id}/usage,backend/tests/integration/test_graph.py::test_interrupted_stream_is_unknown_never_fabricated; backend/tests/unit/test_billing_rules.py,P6; cost_status=calculated only (DV-07)
 R041,in,application.reports; billing,GET /research/runs/{id}/usage; GET /reports/summary,,P6/P8
 R042,in,application.budget,admission + per-call checks,backend/tests/integration/test_wallet_ledger.py::test_budget_caps_and_settlement; ::test_demo_credit_cannot_raise_real_caps,P4 service; wired into admission in P5 and per call in P6
 R043,partial,application.reconciliation; worker scheduler,,,P5 24 h hold release; invoice reconciliation deferred (DV-07)
@@ -47,16 +47,16 @@ R045,in,stats; application.reports,GET /reports/summary,,P8
 R046,in,stats (percentiles),GET /reports/summary,,P8; percentile_cont; null on empty; warn below 100
 R047,in,stats (success rate),GET /reports/summary,,P8
 R048,in,application.reports,GET /reports/summary,,P8; 90-day sync cap; 30 s cache; window basis per metric
-R049,in,security; api schemas; tools,all boundaries,backend/tests/unit/test_money_schema.py; tests/contract/test_contracts.py; backend/tests/integration/test_tools.py::test_bad_arguments_never_reach_providers,P1-P6
-R050,in,security (taint); agents prompts,,,P6
-R051,in,security validators; workflows (handoff_validation),validation.completed,,P6; injection + unit-mix fixtures
-R052,in,mcp_server; security (egress),,backend/tests/unit/test_egress.py; test_tools.py::test_mcp_rejects_missing_or_wrong_token,P3
+R049,in,security; api schemas; tools,worker graph,backend/tests/unit/test_research_validation.py,P6
+R050,in,security (taint); agents prompts,worker graph,backend/tests/integration/test_graph.py::test_injection_article_is_quarantined; backend/tests/unit/test_research_validation.py,P6
+R051,in,security validators; workflows (handoff_validation),worker graph,backend/tests/integration/test_graph.py::test_unapproved_tool_request_is_refused_by_policy,P6
+R052,in,mcp_server; security (egress),worker graph,backend/tests/unit/test_research_validation.py::test_usd_per_oz_mixed_with_inr_per_kg_is_blocked_without_fx,P6
 R053,in,observability; repositories (audit_events),,backend/tests/integration/test_db_invariants.py (immutable audit/ledger),P1 tables; P2 onward audit writes
 R054,partial,worker (purge); application.deletion,POST /me/deletion-requests,backend/tests/integration/test_schema.py::test_every_table_documents_a_retention_class,P9; third-party trace deletion deferred (DV-10)
 R055,partial,docs/ops,,,P9; restore drills deferred (DV-10)
 R056,in,worker (leases; fencing; recovery sweeper),,,P5
 R057,in,adapters (deadlines; retries; circuit breakers),,backend/tests/integration/test_tools.py::test_timeout_and_retries,P3/P6
-R058,partial,observability (TraceSink; LangSmith),,,P6; gap flag when no key (DV-09)
+R058,partial,observability (TraceSink; LangSmith),worker tracing,backend/tests/integration/test_graph.py::test_failed_trace_export_is_buffered_and_flagged,P6; LangSmith optional (DV-09)
 R059,deferred,docs/ops,,,DV-06; runbook-lite in P9
 R060,deferred,docs/ops,,,DV-06
 R061,deferred,docs/ops,,,DV-06

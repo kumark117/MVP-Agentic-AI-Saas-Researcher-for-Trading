@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     demo_checkout_max_inr: Decimal = Decimal("500.00")
 
     worker_concurrency: int = 2  # jobs executed at once per worker process
+    artifact_dir: str = "./data/artifacts"  # local ArtifactStore volume
+    langsmith_api_key: SecretStr | None = None
+    langsmith_project: str = "alloyiq-dev"
 
     @property
     def is_prod(self) -> bool:

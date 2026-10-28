@@ -14,8 +14,10 @@ x-backend: &backend
     DATABASE_WORKER_URL: postgresql+asyncpg://alloyiq_worker:${ALLOYIQ_WORKER_DB_PASSWORD}@postgres:5432/alloyiq
     DATABASE_MIGRATOR_URL: postgresql+asyncpg://alloyiq_migrator:${ALLOYIQ_MIGRATOR_DB_PASSWORD}@postgres:5432/alloyiq
     WATCHFILES_FORCE_POLLING: "true"  # Windows bind mounts do not deliver inotify events
+    ARTIFACT_DIR: /app/data/artifacts
   volumes:
     - ./backend/src:/app/src
+    - artifacts:/app/data/artifacts  # LocalArtifactStore (provider responses, exports)
   depends_on:
     postgres:
       condition: service_healthy
@@ -119,6 +121,7 @@ services:
 
 volumes:
   pg_data:
+  artifacts:
   caddy_data:
   web_node_modules:
   web_next:
