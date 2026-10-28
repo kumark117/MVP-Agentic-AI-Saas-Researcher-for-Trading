@@ -23,6 +23,11 @@ def test_every_route_documents_its_response_model() -> None:
     doc = json.loads((CONTRACTS / "openapi.json").read_text(encoding="utf-8"))
     for path, ops in doc["paths"].items():
         for method, op in ops.items():
+            if path.startswith("/api/v1/webhooks/"):
+                # Disabled by design (D016, D064): documented as always 404, never success.
+                assert "404" in op["responses"], f"{method} {path} must document 404"
+                assert not any(c.startswith("2") for c in op["responses"]), path
+                continue
             ok = (
                 op["responses"].get("200")
                 or op["responses"].get("201")

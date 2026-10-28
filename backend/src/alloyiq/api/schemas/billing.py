@@ -11,6 +11,7 @@ from pydantic import Field
 from alloyiq.api.schemas.common import Money, PositiveMoney, SimulationFields, Strict
 
 CheckoutStatus = Literal["created", "pending", "paid", "failed", "expired"]
+LedgerKind = Literal["topup", "run_debit", "refund", "adjustment", "reversal", "opening_grant"]
 
 
 class Balance(SimulationFields):
@@ -26,7 +27,7 @@ class Balance(SimulationFields):
 class LedgerEntry(SimulationFields):
     transaction_id: UUID
     business_event_id: str
-    kind: str
+    kind: LedgerKind
     amount: Money  # signed movement on the member's wallet
     description: str
     run_id: UUID | None

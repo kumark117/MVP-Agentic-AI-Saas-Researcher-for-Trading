@@ -30,17 +30,17 @@ R028,partial,frontend,all member screens,,P7; privileged admin screens deferred 
 R029,in,frontend RunStatus/ActivityPanel; workflows,GET /research/runs/{id}/activity; activity.appended,,P6/P7; no chain-of-thought
 R030,in,frontend ReportPanel; agents.SignalAgent,GET /research/runs/{id}/report,,P6/P7
 R031,in,frontend about/,/about,,P9 content; opens in new tab
-R032,partial,frontend account; application.wallet,GET /account/balance; GET /billing/invoices,,P4/P7; subscription charges deferred (DV-04)
+R032,partial,application.wallet; application.billing,GET /account/balance; GET /account/ledger; GET /billing/invoices,backend/tests/integration/test_billing_api.py,P4 API done; screens in P7; subscriptions deferred (DV-04)
 R033,in,application.conversations,/conversations; /conversations/{id}/messages,,P8
 R034,in,application.history; application.exports,GET /research/runs; POST /exports,,P8
 R035,in,application.exports; security (CSV neutraliser),POST /exports; GET /exports/{id},,P8
-R036,in,adapters.DummyPaymentProvider,POST /billing/credit-checkouts; POST /billing/checkouts/{id}/simulate; POST /webhooks/payments/{provider} (404),,P4
-R037,partial,application.billing,POST /billing/credit-checkouts,,P4; subscription changes deferred (DV-04)
-R038,in,billing (ledger); application.wallet,GET /account/balance; GET /account/ledger,backend/tests/integration/test_db_invariants.py (ledger trigger; wallet non-negative CHECK),P4; Hypothesis property tests
-R039,in,billing (rate cards),GET /catalog/prices,backend/tests/integration/test_db_invariants.py::test_active_rate_card_is_frozen,P4; rate card v1 stays draft until OD-3
+R036,in,adapters.payments.DummyPaymentProvider; application.billing,POST /billing/credit-checkouts; GET /billing/checkouts/{id}; POST /billing/checkouts/{id}/simulate; POST /webhooks/payments/{provider} (404),backend/tests/integration/test_billing_api.py; backend/tests/unit/test_billing_rules.py::test_any_event_order_credits_at_most_once; backend/tests/unit/test_egress.py::test_no_payment_network_hosts_on_allowlist,P4
+R037,partial,application.billing,POST /billing/credit-checkouts; POST /billing/refund-requests,backend/tests/integration/test_billing_api.py::test_checkout_limits; ::test_refund_reverses_demo_credit_only,P4; subscription changes deferred (DV-04)
+R038,in,billing.posting; repositories.ledger; application.wallet,GET /account/balance; GET /account/ledger,backend/tests/integration/test_wallet_ledger.py (Hypothesis concurrent admissions; settlement idempotency); backend/tests/unit/test_billing_rules.py; backend/tests/integration/test_db_invariants.py,P4
+R039,in,billing.rates; cli.admin_billing (rate-card-activate),GET /catalog/prices,backend/tests/unit/test_billing_rules.py; backend/tests/integration/test_admin_billing.py::test_rate_card_activation_requires_confirmation; backend/tests/integration/test_db_invariants.py::test_active_rate_card_is_frozen,P4; rate card v1 stays draft until OD-3
 R040,in,adapters.AnthropicLLMGateway; billing,GET /research/runs/{id}/usage,,P6; cost_status=calculated only (DV-07)
 R041,in,application.reports; billing,GET /research/runs/{id}/usage; GET /reports/summary,,P6/P8
-R042,in,application.budget,admission + per-call checks,,P4/P5
+R042,in,application.budget,admission + per-call checks,backend/tests/integration/test_wallet_ledger.py::test_budget_caps_and_settlement; ::test_demo_credit_cannot_raise_real_caps,P4 service; wired into admission in P5 and per call in P6
 R043,partial,application.reconciliation; worker scheduler,,,P5 24 h hold release; invoice reconciliation deferred (DV-07)
 R044,partial,application.reports,GET /reports/summary; GET /reports/models,,P8; platform summary via CLI (DV-05)
 R045,in,stats; application.reports,GET /reports/summary,,P8

@@ -362,6 +362,142 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/account/balance": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Balance */
+    get: operations["balance_api_v1_account_balance_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/account/ledger": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ledger */
+    get: operations["ledger_api_v1_account_ledger_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/credit-checkouts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Checkout */
+    post: operations["create_checkout_api_v1_billing_credit_checkouts_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/checkouts/{checkout_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Checkout */
+    get: operations["get_checkout_api_v1_billing_checkouts__checkout_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/checkouts/{checkout_id}/simulate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Simulate Checkout */
+    post: operations["simulate_checkout_api_v1_billing_checkouts__checkout_id__simulate_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/invoices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Invoices */
+    get: operations["invoices_api_v1_billing_invoices_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/billing/refund-requests": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Refund Request */
+    post: operations["refund_request_api_v1_billing_refund_requests_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/webhooks/payments/{provider}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Payment Webhook */
+    post: operations["payment_webhook_api_v1_webhooks_payments__provider__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -658,9 +794,19 @@ export interface components {
        */
       email: string;
     };
+    /** Envelope[Balance] */
+    Envelope_Balance_: {
+      data: components["schemas"]["Balance"];
+      meta: components["schemas"]["Meta"];
+    };
     /** Envelope[Catalog] */
     Envelope_Catalog_: {
       data: components["schemas"]["Catalog"];
+      meta: components["schemas"]["Meta"];
+    };
+    /** Envelope[Checkout] */
+    Envelope_Checkout_: {
+      data: components["schemas"]["Checkout"];
       meta: components["schemas"]["Meta"];
     };
     /** Envelope[CsrfToken] */
@@ -698,6 +844,16 @@ export interface components {
       data: components["schemas"]["Me"];
       meta: components["schemas"]["Meta"];
     };
+    /** Envelope[Page[LedgerEntry]] */
+    Envelope_Page_LedgerEntry__: {
+      data: components["schemas"]["Page_LedgerEntry_"];
+      meta: components["schemas"]["Meta"];
+    };
+    /** Envelope[Page[Receipt]] */
+    Envelope_Page_Receipt__: {
+      data: components["schemas"]["Page_Receipt_"];
+      meta: components["schemas"]["Meta"];
+    };
     /** Envelope[Page[SessionInfo]] */
     Envelope_Page_SessionInfo__: {
       data: components["schemas"]["Page_SessionInfo_"];
@@ -706,6 +862,11 @@ export interface components {
     /** Envelope[PasswordChanged] */
     Envelope_PasswordChanged_: {
       data: components["schemas"]["PasswordChanged"];
+      meta: components["schemas"]["Meta"];
+    };
+    /** Envelope[Refund] */
+    Envelope_Refund_: {
+      data: components["schemas"]["Refund"];
       meta: components["schemas"]["Meta"];
     };
     /** Envelope[RegisterAccepted] */
@@ -726,6 +887,11 @@ export interface components {
     /** Envelope[Revoked] */
     Envelope_Revoked_: {
       data: components["schemas"]["Revoked"];
+      meta: components["schemas"]["Meta"];
+    };
+    /** Envelope[SimulateAccepted] */
+    Envelope_SimulateAccepted_: {
+      data: components["schemas"]["SimulateAccepted"];
       meta: components["schemas"]["Meta"];
     };
     /** Envelope[Union[RateCard, NoneType]] */
@@ -923,6 +1089,13 @@ export interface components {
        */
       comment: string | null;
     };
+    /** FieldError */
+    FieldError: {
+      /** Field */
+      field: string;
+      /** Message */
+      message: string;
+    };
     /** Fresh */
     Fresh: {
       /**
@@ -1096,8 +1269,11 @@ export interface components {
       transaction_id: string;
       /** Business Event Id */
       business_event_id: string;
-      /** Kind */
-      kind: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "topup" | "run_debit" | "refund" | "adjustment" | "reversal" | "opening_grant";
       amount: components["schemas"]["Money"];
       /** Description */
       description: string;
@@ -1282,6 +1458,20 @@ export interface components {
        */
       amount: string;
     };
+    /** Page[LedgerEntry] */
+    Page_LedgerEntry_: {
+      /** Items */
+      items: components["schemas"]["LedgerEntry"][];
+      /** Next Cursor */
+      next_cursor?: string | null;
+    };
+    /** Page[Receipt] */
+    Page_Receipt_: {
+      /** Items */
+      items: components["schemas"]["Receipt"][];
+      /** Next Cursor */
+      next_cursor?: string | null;
+    };
     /** Page[SessionInfo] */
     Page_SessionInfo_: {
       /** Items */
@@ -1330,6 +1520,34 @@ export interface components {
       timezone: string;
       /** Default Model Profile Id */
       default_model_profile_id: string | null;
+    };
+    /**
+     * Problem
+     * @description application/problem+json body (D081, D109).
+     */
+    Problem: {
+      /**
+       * Type
+       * @default about:blank
+       */
+      type: string;
+      /** Title */
+      title: string;
+      /** Status */
+      status: number;
+      /**
+       * Code
+       * @description Stable machine error code (D109)
+       */
+      code: string;
+      /** Detail */
+      detail: string;
+      /** Instance */
+      instance: string;
+      /** Request Id */
+      request_id: string;
+      /** Field Errors */
+      field_errors?: components["schemas"]["FieldError"][] | null;
     };
     /** Progress */
     Progress: {
@@ -2819,6 +3037,266 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Envelope_list_Plan__"];
+        };
+      };
+    };
+  };
+  balance_api_v1_account_balance_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Balance_"];
+        };
+      };
+    };
+  };
+  ledger_api_v1_account_ledger_get: {
+    parameters: {
+      query?: {
+        from?: string | null;
+        to?: string | null;
+        event_type?:
+          ("topup" | "run_debit" | "refund" | "adjustment" | "reversal" | "opening_grant") | null;
+        cursor?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Page_LedgerEntry__"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_checkout_api_v1_billing_credit_checkouts_post: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description UUID; the same key and body replay the original response (D083) */
+        "Idempotency-Key": string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreditCheckoutRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Checkout_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_checkout_api_v1_billing_checkouts__checkout_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        checkout_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Checkout_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  simulate_checkout_api_v1_billing_checkouts__checkout_id__simulate_post: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description UUID; the same key and body replay the original response (D083) */
+        "Idempotency-Key": string;
+      };
+      path: {
+        checkout_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SimulateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_SimulateAccepted_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  invoices_api_v1_billing_invoices_get: {
+    parameters: {
+      query?: {
+        cursor?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Page_Receipt__"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  refund_request_api_v1_billing_refund_requests_post: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description UUID; the same key and body replay the original response (D083) */
+        "Idempotency-Key": string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RefundRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Envelope_Refund_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  payment_webhook_api_v1_webhooks_payments__provider__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        provider: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Always: public payment webhooks are disabled (D016, D064) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

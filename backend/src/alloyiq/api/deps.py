@@ -14,8 +14,12 @@ from urllib.parse import urlsplit
 import structlog
 from fastapi import Depends, Request, Response
 
+from alloyiq.adapters.payments import DummyPaymentProvider
 from alloyiq.application.auth import AuthService, ClientInfo
+from alloyiq.application.billing import BillingService
+from alloyiq.application.budget import BudgetService, SpendCaps
 from alloyiq.application.catalog import CatalogService
+from alloyiq.application.wallet import WalletService
 from alloyiq.config import Settings
 from alloyiq.domain.errors import DomainError, ErrorCode
 from alloyiq.domain.identity import SESSION_ABSOLUTE, AccountContext
@@ -62,7 +66,26 @@ def build_services(
         auth=auth,
     )
     svc.extra["catalog"] = CatalogService(db)
+    wallet = WalletService(db, opening_credit=settings.demo_opening_credit_inr)
+    auth.on_verified.append(wallet.grant_opening_credit)
+    svc.extra["wallet"] = wallet
+    svc.extra["budget"] = BudgetService(spend_caps(settings))
+    svc.extra["billing"] = BillingService(
+        db,
+        wallet,
+        DummyPaymentProvider(),
+        limiter,
+        checkout_max=settings.demo_checkout_max_inr,
+    )
     return svc
+
+
+def spend_caps(settings: Settings) -> SpendCaps:
+    return SpendCaps(
+        per_run_usd=settings.real_spend_per_run_usd,
+        account_day_usd=settings.real_spend_account_day_usd,
+        platform_day_usd=settings.real_spend_platform_day_usd,
+    )
 
 
 def services(request: Request) -> Services:

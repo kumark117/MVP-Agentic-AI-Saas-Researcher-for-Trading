@@ -743,6 +743,469 @@
           }
         }
       }
+    },
+    "/api/v1/account/balance": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Balance",
+        "operationId": "balance_api_v1_account_balance_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Balance_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/account/ledger": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Ledger",
+        "operationId": "ledger_api_v1_account_ledger_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "event_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "topup",
+                    "run_debit",
+                    "refund",
+                    "adjustment",
+                    "reversal",
+                    "opening_grant"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Type"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Page_LedgerEntry__"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/billing/credit-checkouts": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Create Checkout",
+        "operationId": "create_checkout_api_v1_billing_credit_checkouts_post",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID; the same key and body replay the original response (D083)",
+              "title": "Idempotency-Key"
+            },
+            "description": "UUID; the same key and body replay the original response (D083)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreditCheckoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Checkout_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/billing/checkouts/{checkout_id}": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Get Checkout",
+        "operationId": "get_checkout_api_v1_billing_checkouts__checkout_id__get",
+        "parameters": [
+          {
+            "name": "checkout_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Checkout Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Checkout_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/billing/checkouts/{checkout_id}/simulate": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Simulate Checkout",
+        "operationId": "simulate_checkout_api_v1_billing_checkouts__checkout_id__simulate_post",
+        "parameters": [
+          {
+            "name": "checkout_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Checkout Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID; the same key and body replay the original response (D083)",
+              "title": "Idempotency-Key"
+            },
+            "description": "UUID; the same key and body replay the original response (D083)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_SimulateAccepted_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/billing/invoices": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Invoices",
+        "operationId": "invoices_api_v1_billing_invoices_get",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Page_Receipt__"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/billing/refund-requests": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Refund Request",
+        "operationId": "refund_request_api_v1_billing_refund_requests_post",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID; the same key and body replay the original response (D083)",
+              "title": "Idempotency-Key"
+            },
+            "description": "UUID; the same key and body replay the original response (D083)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Refund_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/payments/{provider}": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Payment Webhook",
+        "operationId": "payment_webhook_api_v1_webhooks_payments__provider__post",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Always: public payment webhooks are disabled (D016, D064)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -867,10 +1330,10 @@
       "Balance": {
         "properties": {
           "payment_mode": {
+            "type": "string",
             "const": "simulated",
-            "default": "simulated",
             "title": "Payment Mode",
-            "type": "string"
+            "default": "simulated"
           },
           "money_collected": {
             "$ref": "#/components/schemas/Money",
@@ -880,10 +1343,10 @@
             }
           },
           "currency": {
+            "type": "string",
             "const": "INR",
-            "default": "INR",
             "title": "Currency",
-            "type": "string"
+            "default": "INR"
           },
           "posted_credit": {
             "$ref": "#/components/schemas/Money"
@@ -901,11 +1364,12 @@
             "$ref": "#/components/schemas/Money"
           },
           "label": {
-            "default": "Simulated demo credit: no cash value",
+            "type": "string",
             "title": "Label",
-            "type": "string"
+            "default": "Simulated demo credit: no cash value"
           }
         },
+        "type": "object",
         "required": [
           "posted_credit",
           "posted_debit",
@@ -913,8 +1377,7 @@
           "pending_settlement",
           "available"
         ],
-        "title": "Balance",
-        "type": "object"
+        "title": "Balance"
       },
       "CancelRequest": {
         "additionalProperties": false,
@@ -979,10 +1442,10 @@
       "Checkout": {
         "properties": {
           "payment_mode": {
+            "type": "string",
             "const": "simulated",
-            "default": "simulated",
             "title": "Payment Mode",
-            "type": "string"
+            "default": "simulated"
           },
           "money_collected": {
             "$ref": "#/components/schemas/Money",
@@ -992,11 +1455,12 @@
             }
           },
           "checkout_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Checkout Id",
-            "type": "string"
+            "title": "Checkout Id"
           },
           "status": {
+            "type": "string",
             "enum": [
               "created",
               "pending",
@@ -1004,35 +1468,35 @@
               "failed",
               "expired"
             ],
-            "title": "Status",
-            "type": "string"
+            "title": "Status"
           },
           "amount": {
             "$ref": "#/components/schemas/Money"
           },
           "hosted_url": {
-            "title": "Hosted Url",
-            "type": "string"
+            "type": "string",
+            "title": "Hosted Url"
           },
           "return_path": {
-            "title": "Return Path",
-            "type": "string"
+            "type": "string",
+            "title": "Return Path"
           },
           "expires_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Expires At",
-            "type": "string"
+            "title": "Expires At"
           },
           "credit_applied": {
-            "title": "Credit Applied",
-            "type": "boolean"
+            "type": "boolean",
+            "title": "Credit Applied"
           },
           "created_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Created At",
-            "type": "string"
+            "title": "Created At"
           }
         },
+        "type": "object",
         "required": [
           "checkout_id",
           "status",
@@ -1043,8 +1507,7 @@
           "credit_applied",
           "created_at"
         ],
-        "title": "Checkout",
-        "type": "object"
+        "title": "Checkout"
       },
       "Citation": {
         "properties": {
@@ -1292,24 +1755,24 @@
         "type": "object"
       },
       "CreditCheckoutRequest": {
-        "additionalProperties": false,
         "properties": {
           "amount": {
             "$ref": "#/components/schemas/Money"
           },
           "return_path": {
+            "type": "string",
             "maxLength": 200,
             "pattern": "^/account(/[a-z0-9/_-]*)?$",
-            "title": "Return Path",
-            "type": "string"
+            "title": "Return Path"
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "amount",
           "return_path"
         ],
-        "title": "CreditCheckoutRequest",
-        "type": "object"
+        "title": "CreditCheckoutRequest"
       },
       "CsrfToken": {
         "properties": {
@@ -1407,6 +1870,22 @@
         ],
         "title": "EmailRequest"
       },
+      "Envelope_Balance_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Balance"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Balance]"
+      },
       "Envelope_Catalog_": {
         "properties": {
           "data": {
@@ -1422,6 +1901,22 @@
           "meta"
         ],
         "title": "Envelope[Catalog]"
+      },
+      "Envelope_Checkout_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Checkout"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Checkout]"
       },
       "Envelope_CsrfToken_": {
         "properties": {
@@ -1535,6 +2030,38 @@
         ],
         "title": "Envelope[Me]"
       },
+      "Envelope_Page_LedgerEntry__": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Page_LedgerEntry_"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Page[LedgerEntry]]"
+      },
+      "Envelope_Page_Receipt__": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Page_Receipt_"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Page[Receipt]]"
+      },
       "Envelope_Page_SessionInfo__": {
         "properties": {
           "data": {
@@ -1566,6 +2093,22 @@
           "meta"
         ],
         "title": "Envelope[PasswordChanged]"
+      },
+      "Envelope_Refund_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Refund"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Refund]"
       },
       "Envelope_RegisterAccepted_": {
         "properties": {
@@ -1630,6 +2173,22 @@
           "meta"
         ],
         "title": "Envelope[Revoked]"
+      },
+      "Envelope_SimulateAccepted_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SimulateAccepted"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[SimulateAccepted]"
       },
       "Envelope_Union_RateCard__NoneType__": {
         "properties": {
@@ -2070,6 +2629,24 @@
         "title": "FeedbackRequest",
         "type": "object"
       },
+      "FieldError": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "message"
+        ],
+        "title": "FieldError"
+      },
       "Fresh": {
         "properties": {
           "result_type": {
@@ -2426,10 +3003,10 @@
       "LedgerEntry": {
         "properties": {
           "payment_mode": {
+            "type": "string",
             "const": "simulated",
-            "default": "simulated",
             "title": "Payment Mode",
-            "type": "string"
+            "default": "simulated"
           },
           "money_collected": {
             "$ref": "#/components/schemas/Money",
@@ -2439,30 +3016,38 @@
             }
           },
           "transaction_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Transaction Id",
-            "type": "string"
+            "title": "Transaction Id"
           },
           "business_event_id": {
-            "title": "Business Event Id",
-            "type": "string"
+            "type": "string",
+            "title": "Business Event Id"
           },
           "kind": {
-            "title": "Kind",
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "topup",
+              "run_debit",
+              "refund",
+              "adjustment",
+              "reversal",
+              "opening_grant"
+            ],
+            "title": "Kind"
           },
           "amount": {
             "$ref": "#/components/schemas/Money"
           },
           "description": {
-            "title": "Description",
-            "type": "string"
+            "type": "string",
+            "title": "Description"
           },
           "run_id": {
             "anyOf": [
               {
-                "format": "uuid",
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -2473,8 +3058,8 @@
           "checkout_id": {
             "anyOf": [
               {
-                "format": "uuid",
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -2485,8 +3070,8 @@
           "refund_id": {
             "anyOf": [
               {
-                "format": "uuid",
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -2497,8 +3082,8 @@
           "reverses_id": {
             "anyOf": [
               {
-                "format": "uuid",
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -2507,11 +3092,12 @@
             "title": "Reverses Id"
           },
           "posted_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Posted At",
-            "type": "string"
+            "title": "Posted At"
           }
         },
+        "type": "object",
         "required": [
           "transaction_id",
           "business_event_id",
@@ -2524,8 +3110,7 @@
           "reverses_id",
           "posted_at"
         ],
-        "title": "LedgerEntry",
-        "type": "object"
+        "title": "LedgerEntry"
       },
       "LoginRequest": {
         "properties": {
@@ -2898,6 +3483,60 @@
         ],
         "title": "Money"
       },
+      "Page_LedgerEntry_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntry"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "Page[LedgerEntry]"
+      },
+      "Page_Receipt_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Receipt"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "Page[Receipt]"
+      },
       "Page_SessionInfo_": {
         "properties": {
           "items": {
@@ -3026,6 +3665,65 @@
           "default_model_profile_id"
         ],
         "title": "Preferences"
+      },
+      "Problem": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "about:blank"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "Stable machine error code (D109)"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "instance": {
+            "type": "string",
+            "title": "Instance"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "field_errors": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FieldError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "status",
+          "code",
+          "detail",
+          "instance",
+          "request_id"
+        ],
+        "title": "Problem",
+        "description": "application/problem+json body (D081, D109)."
       },
       "Progress": {
         "properties": {
@@ -3227,10 +3925,10 @@
       "Receipt": {
         "properties": {
           "payment_mode": {
+            "type": "string",
             "const": "simulated",
-            "default": "simulated",
             "title": "Payment Mode",
-            "type": "string"
+            "default": "simulated"
           },
           "money_collected": {
             "$ref": "#/components/schemas/Money",
@@ -3240,37 +3938,37 @@
             }
           },
           "receipt_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Receipt Id",
-            "type": "string"
+            "title": "Receipt Id"
           },
           "kind": {
+            "type": "string",
             "enum": [
               "topup",
               "refund"
             ],
-            "title": "Kind",
-            "type": "string"
+            "title": "Kind"
           },
           "amount": {
             "$ref": "#/components/schemas/Money"
           },
           "sample": {
+            "type": "boolean",
             "const": true,
-            "default": true,
             "title": "Sample",
-            "type": "boolean"
+            "default": true
           },
           "label": {
-            "default": "Simulation - not a tax invoice",
+            "type": "string",
             "title": "Label",
-            "type": "string"
+            "default": "Simulation - not a tax invoice"
           },
           "checkout_id": {
             "anyOf": [
               {
-                "format": "uuid",
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -3281,8 +3979,8 @@
           "refund_id": {
             "anyOf": [
               {
-                "format": "uuid",
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -3291,11 +3989,12 @@
             "title": "Refund Id"
           },
           "issued_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Issued At",
-            "type": "string"
+            "title": "Issued At"
           }
         },
+        "type": "object",
         "required": [
           "receipt_id",
           "kind",
@@ -3304,16 +4003,15 @@
           "refund_id",
           "issued_at"
         ],
-        "title": "Receipt",
-        "type": "object"
+        "title": "Receipt"
       },
       "Refund": {
         "properties": {
           "payment_mode": {
+            "type": "string",
             "const": "simulated",
-            "default": "simulated",
             "title": "Payment Mode",
-            "type": "string"
+            "default": "simulated"
           },
           "money_collected": {
             "$ref": "#/components/schemas/Money",
@@ -3323,37 +4021,38 @@
             }
           },
           "refund_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Refund Id",
-            "type": "string"
+            "title": "Refund Id"
           },
           "checkout_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Checkout Id",
-            "type": "string"
+            "title": "Checkout Id"
           },
           "amount": {
             "$ref": "#/components/schemas/Money"
           },
           "status": {
+            "type": "string",
             "enum": [
               "requested",
               "succeeded",
               "rejected"
             ],
-            "title": "Status",
-            "type": "string"
+            "title": "Status"
           },
           "reason": {
-            "title": "Reason",
-            "type": "string"
+            "type": "string",
+            "title": "Reason"
           },
           "created_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Created At",
-            "type": "string"
+            "title": "Created At"
           }
         },
+        "type": "object",
         "required": [
           "refund_id",
           "checkout_id",
@@ -3362,34 +4061,33 @@
           "reason",
           "created_at"
         ],
-        "title": "Refund",
-        "type": "object"
+        "title": "Refund"
       },
       "RefundRequest": {
-        "additionalProperties": false,
         "properties": {
           "payment_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Payment Id",
-            "type": "string"
+            "title": "Payment Id"
           },
           "amount": {
             "$ref": "#/components/schemas/Money"
           },
           "reason": {
+            "type": "string",
             "maxLength": 500,
             "minLength": 1,
-            "title": "Reason",
-            "type": "string"
+            "title": "Reason"
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "payment_id",
           "amount",
           "reason"
         ],
-        "title": "RefundRequest",
-        "type": "object"
+        "title": "RefundRequest"
       },
       "RegisterAccepted": {
         "properties": {
@@ -4340,10 +5038,10 @@
       "SimulateAccepted": {
         "properties": {
           "payment_mode": {
+            "type": "string",
             "const": "simulated",
-            "default": "simulated",
             "title": "Payment Mode",
-            "type": "string"
+            "default": "simulated"
           },
           "money_collected": {
             "$ref": "#/components/schemas/Money",
@@ -4353,46 +5051,46 @@
             }
           },
           "checkout_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Checkout Id",
-            "type": "string"
+            "title": "Checkout Id"
           },
           "event_id": {
-            "title": "Event Id",
-            "type": "string"
+            "type": "string",
+            "title": "Event Id"
           },
           "accepted": {
+            "type": "boolean",
             "const": true,
-            "default": true,
             "title": "Accepted",
-            "type": "boolean"
+            "default": true
           }
         },
+        "type": "object",
         "required": [
           "checkout_id",
           "event_id"
         ],
-        "title": "SimulateAccepted",
-        "type": "object"
+        "title": "SimulateAccepted"
       },
       "SimulateRequest": {
-        "additionalProperties": false,
         "properties": {
           "outcome": {
+            "type": "string",
             "enum": [
               "success",
               "failure",
               "pending"
             ],
-            "title": "Outcome",
-            "type": "string"
+            "title": "Outcome"
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "outcome"
         ],
-        "title": "SimulateRequest",
-        "type": "object"
+        "title": "SimulateRequest"
       },
       "StartRunRequest": {
         "additionalProperties": false,

@@ -90,6 +90,74 @@ def make_tenant(engine: Engine) -> Tenant:
     return Tenant(uid, aid, email)
 
 
+def make_run(engine: Engine, t: Tenant, max_charge: str = "25.00") -> uuid.UUID:
+    """A minimal queued run (with its estimate) so reservations have a run to belong to."""
+    eid, rid = uuid.uuid4(), uuid.uuid4()
+    with engine.begin() as c:
+        ins, prof = c.execute(
+            text(
+                "SELECT (SELECT id FROM instruments ORDER BY canonical_id LIMIT 1),"
+                " (SELECT id FROM model_profiles WHERE slug = 'deep')"
+            )
+        ).one()
+        c.execute(
+            text(
+                "INSERT INTO estimates (id, account_id, user_id, normalized_request,"
+                " request_fingerprint, instrument_id, horizon, model_profile_id, approved_models,"
+                " limits, rate_card_version, min_charge, estimated_charge, max_charge,"
+                " max_real_usd, expires_at) VALUES (:e, :a, :u, '{}', 'fp', :i, 'swing', :p,"
+                " ARRAY['claude-opus-5-5'], '{}', 'v-test', 0, 0, :m, 1, now() + interval '5 min')"
+            ),
+            {"e": eid, "a": t.account_id, "u": t.user_id, "i": ins, "p": prof, "m": max_charge},
+        )
+        c.execute(
+            text(
+                "INSERT INTO research_runs (id, account_id, user_id, estimate_id, instrument_id,"
+                " instrument_snapshot, horizon, model_profile_id, versions, limits,"
+                " authorized_max_charge, reserved_amount) VALUES (:r, :a, :u, :e, :i, '{}',"
+                " 'swing', :p, '{}', '{}', :m, :m)"
+            ),
+            {
+                "r": rid,
+                "a": t.account_id,
+                "u": t.user_id,
+                "e": eid,
+                "i": ins,
+                "p": prof,
+                "m": max_charge,
+            },
+        )
+    return rid
+
+
+def grant(engine: Engine, t: Tenant, amount: str) -> None:
+    """Fund a test wallet with an adjustment journal (as the migrator, like grant-credit)."""
+    tid = uuid.uuid4()
+    with engine.begin() as c:
+        c.execute(
+            text(
+                "INSERT INTO ledger_transactions (id, account_id, business_event_id, kind,"
+                " description) VALUES (:t, :a, :b, 'adjustment', 'test funding')"
+            ),
+            {"t": tid, "a": t.account_id, "b": f"adjustment:test-{tid}"},
+        )
+        for acct, amt in ((f"wallet:{t.account_id}", amount), ("sim_adjustments", f"-{amount}")):
+            c.execute(
+                text(
+                    "INSERT INTO ledger_postings (transaction_id, account_id, ledger_account,"
+                    " amount, currency) VALUES (:t, :a, :l, CAST(:m AS numeric), 'INR')"
+                ),
+                {"t": tid, "a": t.account_id, "l": acct, "m": amt},
+            )
+        c.execute(
+            text(
+                "UPDATE wallets SET posted_credit = posted_credit + CAST(:m AS numeric)"
+                " WHERE account_id = :a"
+            ),
+            {"a": t.account_id, "m": amount},
+        )
+
+
 def make_settings(**overrides: object) -> object:
     from pydantic import SecretStr
 

@@ -243,3 +243,50 @@ From build prompt §21, plus anything found while building.
 | OD-7 | When to un-defer MFA, the admin UI, Google OIDC and subscriptions | Post-MVP | open |
 | OD-8 | Incident-response ownership once anyone other than the owner uses the system | Any external user | open |
 | OD-9 | Docker Desktop's VM has about 3 GB of RAM on the build machine. That is enough for P0; LangGraph, Next dev and Postgres together in P6/P7 may need 4-6 GB (Docker Desktop > Settings > Resources, or `.wslconfig`) | P6/P7 performance | open |
+
+## ADR-014 Demo accounting, dummy payments and real-spend budgets (accepted, P4)
+
+- **Ledger:** `billing.posting` builds every journal as pure data; the repository posts it
+  with `ON CONFLICT (business_event_id) DO NOTHING`, so a repeated business event (opening
+  grant, `topup:{checkout_id}`, `run_debit:{run_id}`, `refund:{refund_id}`) is a no-op. The
+  member's wallet is `wallet:{account_id}` (positive = demo credit); counter-accounts are
+  `sim_topup_source`, `sim_usage_income`, `sim_refunds` and `sim_adjustments`. None of them
+  is revenue or cash. Corrections are reversal journals, never edits.
+- **Balance:** `GET /account/balance` is computed from postings and reservations. The
+  `wallets` row is a projection, updated in the same transaction and checked by a database
+  `CHECK` (available >= 0); `alloyiq-admin reconcile payments [--repair]` compares and rebuilds
+  it, and writes an incident on drift.
+- **Lock order:** wallet -> account_day budget -> platform_day budget, everywhere
+  (admission, settlement, refunds, pending-hold release).
+- **Settlement rounding:** customer charges are summed at micro-INR precision and rounded
+  once per run, half-up, to the paisa; the difference is stored as `rounding_adjustment` on
+  the `run_debit` journal. A debit never exceeds the reservation (the platform absorbs any
+  excess). With unknown usage the rest of the reservation stays as a pending hold for 24 h,
+  then a worker scheduler releases it.
+- **Unpriced categories:** a token category with tokens but no verified price makes the
+  call's `cost_status=unknown` with a null total (never zero), and the member is not
+  charged for that portion. Prompt caching is enabled only for models whose cache-read and
+  cache-write prices are on the pinned rate card, so worst-case estimates need only input
+  and output rates. Rate card v1 has no cache-write prices, so caching stays off until the
+  owner verifies them (OD-3).
+- **Rate-card activation:** `alloyiq-admin rate-card-activate <version>
+  --confirm-prices-verified` marks the priced items verified, retires the active card and
+  activates the draft. Without the flag it lists the prices to check and refuses.
+- **Dummy payments:** the browser only picks an outcome for its own checkout
+  (`/simulate`, CSRF and Idempotency-Key). The server writes a trusted `payment_events` row
+  and NOTIFYs; the worker applies events one by one in the account's RLS context.
+  Checkout states are final once paid, failed or expired, so duplicate and reordered events
+  have no effect. A success received after `expires_at` expires the checkout instead. Expiry
+  uses a deterministic event ID, so the scheduler is idempotent. A refund is checked at
+  request time and again when applied; it is rejected if the credit was spent in between.
+- **Top-up limits:** at most `DEMO_CHECKOUT_MAX_INR` per checkout and the plan's daily limit
+  per UTC day (open plus paid checkouts count), whole paise only; 429 `PLAN_LIMIT_REACHED`
+  with Retry-After.
+- **Real-spend caps:** `BudgetService` keeps one row per scope and UTC day. The limit comes
+  from configuration only and is re-applied on every lock. Exceeding the day caps at
+  admission is 503 `BUDGET_EXCEEDED` with Retry-After until 00:00 UTC. A per-run cap overrun
+  at estimate time is 422. With unknown usage, settlement counts the whole reservation as
+  spent and leaves it `pending`.
+- **Idempotency:** one helper (`application.idempotent.once`) claims the key, runs the
+  mutation and saves the response in the same transaction. The fingerprint covers the
+  concrete path and the body, so reusing a key on another checkout is a 409.
