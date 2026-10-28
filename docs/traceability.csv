@@ -6,12 +6,12 @@ R004,in,domain (Signal; confidence); agents.SignalAgent,GET /research/runs/{id}/
 R005,in,adapters.DummyPaymentProvider; billing,payment_mode=simulated on all billing responses,,P4; no card/bank/UPI fields exist anywhere
 R006,partial,domain (roles); cli.admin,,,member + platform_admin only; admin via CLI; no MFA (DV-02)
 R007,in,frontend,all screens,,P7; axe + keyboard Playwright checks; WCAG 2.2 AA target
-R008,in,application.auth,/auth/register /auth/verify-email /auth/login /auth/logout /auth/forgot-password /auth/reset-password /me/password /me/deletion-requests,,P2
+R008,in,application.auth,/auth/register /auth/verify-email /auth/login /auth/logout /auth/forgot-password /auth/reset-password /me/password /me/deletion-requests,backend/tests/integration/test_auth_api.py; test_email_dispatch.py,P2
 R009,deferred,,,,Google OIDC (DV-01); auth_identities table kept
-R010,in,application.auth; repositories.sessions,GET /me/sessions,,P2; multi-device run visibility proven in P5/P7
-R011,partial,application.auth,GET /me/sessions; DELETE /me/sessions/{id}; POST /auth/logout-all,,P2; privileged 8 h sessions + MFA deferred (DV-02)
-R012,in,api middleware (AccountContext); repositories (RLS),all private routes and SSE,backend/tests/integration/test_rls.py,P1 RLS; P2 context; P5 SSE 15 s revocation close
-R013,partial,security; application.auth,POST /auth/reauthenticate,,P2; admin-MFA part deferred (DV-02)
+R010,in,application.auth; repositories.sessions,GET /me/sessions,backend/tests/integration/test_auth_api.py::test_two_devices_and_per_session_revocation,P2; multi-device run visibility proven in P5/P7
+R011,partial,application.auth,GET /me/sessions; DELETE /me/sessions/{id}; POST /auth/logout-all,backend/tests/integration/test_auth_api.py (session inventory; revoke one/all; expiry),P2; privileged 8 h sessions + MFA deferred (DV-02)
+R012,in,api middleware (AccountContext); repositories (RLS),all private routes and SSE,backend/tests/integration/test_rls.py; backend/tests/integration/test_auth_api.py::test_cannot_touch_another_accounts_session,P1 RLS; P2 context; P5 SSE 15 s revocation close
+R013,partial,security; application.auth,POST /auth/reauthenticate,backend/tests/integration/test_auth_api.py (enumeration; CSRF; reauth; rate limit; hashed tokens),P2; admin-MFA part deferred (DV-02)
 R014,in,application.catalog; cli catalog verify,GET /catalog/instruments,seed: backend/src/alloyiq/cli/seed.py; domain/catalog.py,P3; disabled combinations carry reasons
 R015,in,domain (Instrument); repositories.instruments,GET /catalog/instruments,,P1 schema; P3 data
 R016,in,tools envelope; security validators,tool.completed,,P3/P6

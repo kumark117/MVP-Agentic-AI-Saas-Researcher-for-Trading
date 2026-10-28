@@ -48,6 +48,9 @@ class RequestContextMiddleware:
                 status = message["status"]
                 headers = list(message.get("headers", []))
                 headers.append((REQUEST_ID_HEADER, request_id.encode()))
+                # Private API data is never stored by browsers or proxies.
+                if not any(k.lower() == b"cache-control" for k, _ in headers):
+                    headers.append((b"cache-control", b"no-store"))
                 message["headers"] = headers
             await send(message)
 
@@ -55,6 +58,7 @@ class RequestContextMiddleware:
             try:
                 await self.app(scope, receive, send_wrapper)
             finally:
+                structlog.contextvars.unbind_contextvars("account_pseudonym", "session_ref")
                 log.info(
                     "request",
                     method=scope["method"],

@@ -63,6 +63,7 @@ class UserSummary(Out):
 class LoginResult(Out):
     user: UserSummary
     session_expires_at: datetime
+    csrf_token: str  # new session, new CSRF binding
 
 
 class ResetPasswordRequest(Strict):
@@ -97,6 +98,7 @@ class ChangePasswordRequest(Strict):
 
 class PasswordChanged(Out):
     changed: Literal[True] = True
+    csrf_token: str  # the session was rotated
 
 
 class AccountSummary(Out):

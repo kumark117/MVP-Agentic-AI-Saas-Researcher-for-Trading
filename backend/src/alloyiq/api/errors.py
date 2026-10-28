@@ -1,4 +1,4 @@
-"""Stable error codes (D109) and problem+json rendering (D081).
+"""problem+json rendering (D081) for DomainError and framework errors.
 
 Internal exception text never reaches the client; INTERNAL_ERROR carries
 only the request ID and a generic detail.
@@ -6,62 +6,30 @@ only the request ID and a generic detail.
 
 from __future__ import annotations
 
-from enum import StrEnum
-
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from alloyiq.api.envelope import FieldError, Problem, request_id_of
+from alloyiq.domain.errors import DomainError, ErrorCode
 from alloyiq.observability.logging import get_logger
 
 PROBLEM_JSON = "application/problem+json"
 
+# Services raise DomainError; the API layer has no separate error type.
+ApiError = DomainError
+
+__all__ = [
+    "PROBLEM_JSON",
+    "ApiError",
+    "DomainError",
+    "ErrorCode",
+    "install_error_handlers",
+    "problem_response",
+]
+
 log = get_logger(__name__)
-
-
-class ErrorCode(StrEnum):
-    AUTH_REQUIRED = "AUTH_REQUIRED"
-    ACCOUNT_SUSPENDED = "ACCOUNT_SUSPENDED"
-    CSRF_FAILED = "CSRF_FAILED"
-    VALIDATION_FAILED = "VALIDATION_FAILED"
-    RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND"
-    IDEMPOTENCY_CONFLICT = "IDEMPOTENCY_CONFLICT"
-    INVALID_RUN_STATE = "INVALID_RUN_STATE"
-    ESTIMATE_EXPIRED = "ESTIMATE_EXPIRED"
-    ESTIMATE_MISMATCH = "ESTIMATE_MISMATCH"
-    INSUFFICIENT_CREDIT = "INSUFFICIENT_CREDIT"
-    PLAN_LIMIT_REACHED = "PLAN_LIMIT_REACHED"
-    RATE_LIMITED = "RATE_LIMITED"
-    PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
-    UNSUPPORTED_INSTRUMENT = "UNSUPPORTED_INSTRUMENT"
-    REPORT_NOT_READY = "REPORT_NOT_READY"
-    EVENT_CURSOR_EXPIRED = "EVENT_CURSOR_EXPIRED"
-    BUDGET_EXCEEDED = "BUDGET_EXCEEDED"
-    INTERNAL_ERROR = "INTERNAL_ERROR"
-
-
-class ApiError(Exception):
-    """Raised by handlers/services to produce a problem+json response."""
-
-    def __init__(
-        self,
-        status: int,
-        code: ErrorCode,
-        title: str,
-        detail: str,
-        *,
-        field_errors: list[FieldError] | None = None,
-        headers: dict[str, str] | None = None,
-    ) -> None:
-        super().__init__(detail)
-        self.status = status
-        self.code = code
-        self.title = title
-        self.detail = detail
-        self.field_errors = field_errors
-        self.headers = headers
 
 
 def problem_response(
@@ -71,10 +39,12 @@ def problem_response(
     title: str,
     detail: str,
     *,
+    problem_type: str = "about:blank",
     field_errors: list[FieldError] | None = None,
     headers: dict[str, str] | None = None,
 ) -> JSONResponse:
     body = Problem(
+        type=problem_type,
         title=title,
         status=status,
         code=code.value,
@@ -99,21 +69,24 @@ _HTTP_CODES: dict[int, tuple[ErrorCode, str]] = {
 
 
 def install_error_handlers(app: FastAPI) -> None:
-    @app.exception_handler(ApiError)
-    async def _api_error(request: Request, exc: ApiError) -> JSONResponse:
+    @app.exception_handler(DomainError)
+    async def _domain_error(request: Request, exc: DomainError) -> JSONResponse:
+        fields = [FieldError(field=f, message=m) for f, m in exc.field_errors or []] or None
         return problem_response(
             request,
             exc.status,
             exc.code,
             exc.title,
             exc.detail,
-            field_errors=exc.field_errors,
+            problem_type=exc.problem_type,
+            field_errors=fields,
             headers=exc.headers,
         )
 
     @app.exception_handler(RequestValidationError)
     async def _validation(request: Request, exc: RequestValidationError) -> JSONResponse:
         errors = [
+            # Never echo the rejected input (it may be a password).
             FieldError(field=".".join(str(p) for p in e.get("loc", ())), message=str(e.get("msg")))
             for e in exc.errors()
         ]

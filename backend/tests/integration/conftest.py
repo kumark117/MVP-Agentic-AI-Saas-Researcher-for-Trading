@@ -64,7 +64,7 @@ async def worker_db() -> AsyncIterator[Database]:
 def make_tenant(engine: Engine) -> Tenant:
     """Create a verified user with a personal account and wallet (as the migrator)."""
     uid, aid = uuid.uuid4(), uuid.uuid4()
-    email = f"t-{uid.hex[:12]}@example.test"
+    email = f"t-{uid.hex[:12]}@example.com"
     with engine.begin() as c:
         c.execute(
             text(
@@ -88,6 +88,40 @@ def make_tenant(engine: Engine) -> Tenant:
         )
         c.execute(text("INSERT INTO wallets (account_id) VALUES (:a)"), {"a": aid})
     return Tenant(uid, aid, email)
+
+
+def make_settings(**overrides: object) -> object:
+    from pydantic import SecretStr
+
+    from alloyiq.config import Settings
+
+    base: dict[str, object] = {
+        "app_env": "test",
+        "public_origin": "http://test",
+        "database_url": SecretStr(API_URL or ""),
+        "database_worker_url": SecretStr(WORKER_URL or ""),
+        "session_secret": SecretStr("test-session-secret-0123456789"),
+        "argon2_time_cost": 1,
+        "argon2_memory_kib": 1024,
+        "argon2_parallelism": 1,
+    }
+    base.update(overrides)
+    return Settings(**base)  # type: ignore[arg-type]
+
+
+@pytest.fixture
+async def app(api_db: Database):  # type: ignore[no-untyped-def]
+    from alloyiq.api.app import create_app
+    from alloyiq.api.deps import build_services
+    from alloyiq.security.ratelimit import InMemoryRateLimiter
+
+    settings = make_settings()
+    services = build_services(settings, db=api_db, limiter=InMemoryRateLimiter())  # type: ignore[arg-type]
+
+    async def ok() -> None:
+        return None
+
+    yield create_app(settings, services=services, readiness_probe=ok)  # type: ignore[arg-type]
 
 
 @pytest.fixture

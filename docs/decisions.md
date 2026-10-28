@@ -151,6 +151,40 @@ avoids a Google fetch at build and dev time and keeps the strict CSP planned for
   the generated TypeScript types exist before each route ships. Event payloads have one JSON
   Schema per event type.
 
+## ADR-012 Identity implementation details (accepted, P2)
+
+- **Pre-auth lookups** (find a user by email, resolve a session by token hash, find a
+  verification or reset token) use three `SECURITY DEFINER` functions owned by the migrator
+  (migration 0003) with a pinned `search_path`. RLS stays FORCE on `users`, `sessions` and
+  `auth_tokens`; the API role cannot scan them.
+- **CSRF:** signed double-submit. `GET /auth/csrf` returns `nonce.HMAC(secret, nonce|binding)`
+  and sets the same value in an HttpOnly cookie; mutations must send it in `X-CSRF-Token`
+  *and* carry an `Origin` (or `Referer`) equal to `PUBLIC_ORIGIN`. The binding is the session
+  ID, or `anon` before login, so login, password change and logout each issue a new token in
+  the response. When a session is revoked, its token stops working too. The frontend client
+  therefore refetches `/auth/csrf` and retries **once** on `403 CSRF_FAILED`, which is safe
+  because the server rejects the request before doing anything.
+- **One-time links** put the token in the URL *fragment* (`/verify-email#token=...`), which is
+  never sent to servers, proxies or `Referer` headers (R013: no secrets in page URLs). The
+  page posts it to the API.
+- **Unverified accounts cannot log in** (403 `AUTH_REQUIRED`, problem type `email-unverified`).
+  The check runs only after the password verifies, so it reveals nothing to someone without
+  the password. Completing a password reset marks the email as verified, because it proves
+  control of the mailbox.
+- **Enumeration:** register, resend and forgot always return the same 202 body and do an
+  Argon2 hash or verify either way; a registration attempt on an existing address emails the
+  owner instead. Login failures are identical for unknown emails and wrong passwords.
+- **Freshness:** login grants 5 minutes of freshness; `POST /auth/reauthenticate` renews it.
+  `logout-all`, password change and deletion requests require it, and otherwise return 403
+  with problem type `reauthentication-required`.
+- **Deletion requests** are scheduled 7 days ahead (a grace period inside the 30-day R054
+  window) and are idempotent; the purge job arrives in P9.
+- **Email** is written to `email_outbox` in the same transaction as the token, and the worker
+  delivers it through SMTP (Mailpit in dev), then wipes the payload holding the link.
+- **Rate limits:** a Redis token bucket per IP and per subject. If Redis fails, a half-capacity
+  in-process limiter takes over (never fail open).
+- `Cache-Control: no-store` is on every API response.
+
 ---
 
 # Open decisions (owner input needed; do not invent answers)

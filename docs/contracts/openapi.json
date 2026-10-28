@@ -49,6 +49,562 @@
           }
         }
       }
+    },
+    "/api/v1/auth/csrf": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Csrf",
+        "operationId": "csrf_api_v1_auth_csrf_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_CsrfToken_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Register",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_RegisterAccepted_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify-email": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Verify Email",
+        "operationId": "verify_email_api_v1_auth_verify_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Verified_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/resend-verification": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Resend Verification",
+        "operationId": "resend_verification_api_v1_auth_resend_verification_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_GenericAccepted_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_LoginResult_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Logout",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Revoked_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout-all": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Logout All",
+        "operationId": "logout_all_api_v1_auth_logout_all_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_RevokedCount_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Forgot Password",
+        "operationId": "forgot_password_api_v1_auth_forgot_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_GenericAccepted_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Reset Password",
+        "operationId": "reset_password_api_v1_auth_reset_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_ResetDone_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reauthenticate": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Reauthenticate",
+        "operationId": "reauthenticate_api_v1_auth_reauthenticate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReauthenticateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Fresh_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Get Me",
+        "operationId": "get_me_api_v1_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Me_"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Patch Me",
+        "operationId": "patch_me_api_v1_me_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Me_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/password": {
+      "post": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Change Password",
+        "operationId": "change_password_api_v1_me_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_PasswordChanged_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/sessions": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "List Sessions",
+        "operationId": "list_sessions_api_v1_me_sessions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Page_SessionInfo__"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/sessions/{session_id}": {
+      "delete": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Revoke Session",
+        "operationId": "revoke_session_api_v1_me_sessions__session_id__delete",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_Revoked_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/deletion-requests": {
+      "post": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Request Deletion",
+        "operationId": "request_deletion_api_v1_me_deletion_requests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_DeletionScheduled_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -56,32 +612,32 @@
       "AccountSummary": {
         "properties": {
           "account_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Account Id",
-            "type": "string"
+            "title": "Account Id"
           },
           "currency": {
+            "type": "string",
             "const": "INR",
-            "default": "INR",
             "title": "Currency",
-            "type": "string"
+            "default": "INR"
           },
           "status": {
-            "title": "Status",
-            "type": "string"
+            "type": "string",
+            "title": "Status"
           },
           "plan": {
-            "title": "Plan",
-            "type": "string"
+            "type": "string",
+            "title": "Plan"
           }
         },
+        "type": "object",
         "required": [
           "account_id",
           "status",
           "plan"
         ],
-        "title": "AccountSummary",
-        "type": "object"
+        "title": "AccountSummary"
       },
       "Activity": {
         "properties": {
@@ -267,20 +823,20 @@
         "type": "object"
       },
       "ChangePasswordRequest": {
-        "additionalProperties": false,
         "properties": {
           "new_password": {
+            "type": "string",
             "maxLength": 256,
             "minLength": 12,
-            "title": "New Password",
-            "type": "string"
+            "title": "New Password"
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "new_password"
         ],
-        "title": "ChangePasswordRequest",
-        "type": "object"
+        "title": "ChangePasswordRequest"
       },
       "Checkout": {
         "properties": {
@@ -620,15 +1176,15 @@
       "CsrfToken": {
         "properties": {
           "csrf_token": {
-            "title": "Csrf Token",
-            "type": "string"
+            "type": "string",
+            "title": "Csrf Token"
           }
         },
+        "type": "object",
         "required": [
           "csrf_token"
         ],
-        "title": "CsrfToken",
-        "type": "object"
+        "title": "CsrfToken"
       },
       "DailyPoint": {
         "properties": {
@@ -664,54 +1220,118 @@
         "type": "object"
       },
       "DeletionRequest": {
-        "additionalProperties": false,
         "properties": {
           "confirmation": {
+            "type": "boolean",
             "const": true,
-            "title": "Confirmation",
-            "type": "boolean"
+            "title": "Confirmation"
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "confirmation"
         ],
-        "title": "DeletionRequest",
-        "type": "object"
+        "title": "DeletionRequest"
       },
       "DeletionScheduled": {
         "properties": {
           "request_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Request Id",
-            "type": "string"
+            "title": "Request Id"
           },
           "scheduled_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Scheduled At",
-            "type": "string"
+            "title": "Scheduled At"
           }
         },
+        "type": "object",
         "required": [
           "request_id",
           "scheduled_at"
         ],
-        "title": "DeletionScheduled",
-        "type": "object"
+        "title": "DeletionScheduled"
       },
       "EmailRequest": {
-        "additionalProperties": false,
         "properties": {
           "email": {
+            "type": "string",
             "format": "email",
-            "title": "Email",
-            "type": "string"
+            "title": "Email"
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "email"
         ],
-        "title": "EmailRequest",
-        "type": "object"
+        "title": "EmailRequest"
+      },
+      "Envelope_CsrfToken_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CsrfToken"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[CsrfToken]"
+      },
+      "Envelope_DeletionScheduled_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DeletionScheduled"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[DeletionScheduled]"
+      },
+      "Envelope_Fresh_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Fresh"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Fresh]"
+      },
+      "Envelope_GenericAccepted_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GenericAccepted"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[GenericAccepted]"
       },
       "Envelope_HealthStatus_": {
         "properties": {
@@ -728,6 +1348,150 @@
           "meta"
         ],
         "title": "Envelope[HealthStatus]"
+      },
+      "Envelope_LoginResult_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LoginResult"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[LoginResult]"
+      },
+      "Envelope_Me_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Me"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Me]"
+      },
+      "Envelope_Page_SessionInfo__": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Page_SessionInfo_"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Page[SessionInfo]]"
+      },
+      "Envelope_PasswordChanged_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PasswordChanged"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[PasswordChanged]"
+      },
+      "Envelope_RegisterAccepted_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RegisterAccepted"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[RegisterAccepted]"
+      },
+      "Envelope_ResetDone_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ResetDone"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[ResetDone]"
+      },
+      "Envelope_RevokedCount_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RevokedCount"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[RevokedCount]"
+      },
+      "Envelope_Revoked_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Revoked"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Revoked]"
+      },
+      "Envelope_Verified_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Verified"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[Verified]"
       },
       "Estimate": {
         "properties": {
@@ -1092,22 +1856,22 @@
       "Fresh": {
         "properties": {
           "result_type": {
+            "type": "string",
             "const": "fresh",
-            "default": "fresh",
             "title": "Result Type",
-            "type": "string"
+            "default": "fresh"
           },
           "fresh_until": {
+            "type": "string",
             "format": "date-time",
-            "title": "Fresh Until",
-            "type": "string"
+            "title": "Fresh Until"
           }
         },
+        "type": "object",
         "required": [
           "fresh_until"
         ],
-        "title": "Fresh",
-        "type": "object"
+        "title": "Fresh"
       },
       "FreshnessPolicy": {
         "properties": {
@@ -1131,22 +1895,35 @@
         "type": "object"
       },
       "GenericAccepted": {
-        "description": "Same response whether or not the email exists (no enumeration, R008).",
         "properties": {
           "accepted": {
+            "type": "boolean",
             "const": true,
-            "default": true,
             "title": "Accepted",
-            "type": "boolean"
+            "default": true
           },
           "message": {
-            "default": "If the address can be used, you will receive an email shortly.",
+            "type": "string",
             "title": "Message",
-            "type": "string"
+            "default": "If the address can be used, you will receive an email shortly."
           }
         },
+        "type": "object",
         "title": "GenericAccepted",
-        "type": "object"
+        "description": "Same response whether or not the email exists (no enumeration, R008)."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
       },
       "HealthStatus": {
         "properties": {
@@ -1534,26 +2311,26 @@
         "type": "object"
       },
       "LoginRequest": {
-        "additionalProperties": false,
         "properties": {
           "email": {
+            "type": "string",
             "format": "email",
-            "title": "Email",
-            "type": "string"
+            "title": "Email"
           },
           "password": {
+            "type": "string",
             "maxLength": 256,
             "minLength": 1,
-            "title": "Password",
-            "type": "string"
+            "title": "Password"
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "email",
           "password"
         ],
-        "title": "LoginRequest",
-        "type": "object"
+        "title": "LoginRequest"
       },
       "LoginResult": {
         "properties": {
@@ -1561,17 +2338,22 @@
             "$ref": "#/components/schemas/UserSummary"
           },
           "session_expires_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Session Expires At",
-            "type": "string"
+            "title": "Session Expires At"
+          },
+          "csrf_token": {
+            "type": "string",
+            "title": "Csrf Token"
           }
         },
+        "type": "object",
         "required": [
           "user",
-          "session_expires_at"
+          "session_expires_at",
+          "csrf_token"
         ],
-        "title": "LoginResult",
-        "type": "object"
+        "title": "LoginResult"
       },
       "Me": {
         "properties": {
@@ -1585,18 +2367,19 @@
             "items": {
               "type": "string"
             },
-            "title": "Permissions",
-            "type": "array"
+            "type": "array",
+            "title": "Permissions"
           },
           "preferences": {
             "$ref": "#/components/schemas/Preferences"
           },
           "current_session_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Current Session Id",
-            "type": "string"
+            "title": "Current Session Id"
           }
         },
+        "type": "object",
         "required": [
           "user",
           "account",
@@ -1604,8 +2387,7 @@
           "preferences",
           "current_session_id"
         ],
-        "title": "Me",
-        "type": "object"
+        "title": "Me"
       },
       "Message": {
         "properties": {
@@ -1899,17 +2681,51 @@
         "title": "Money",
         "type": "object"
       },
+      "Page_SessionInfo_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SessionInfo"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "Page[SessionInfo]"
+      },
       "PasswordChanged": {
         "properties": {
           "changed": {
+            "type": "boolean",
             "const": true,
-            "default": true,
             "title": "Changed",
-            "type": "boolean"
+            "default": true
+          },
+          "csrf_token": {
+            "type": "string",
+            "title": "Csrf Token"
           }
         },
-        "title": "PasswordChanged",
-        "type": "object"
+        "type": "object",
+        "required": [
+          "csrf_token"
+        ],
+        "title": "PasswordChanged"
       },
       "Plan": {
         "properties": {
@@ -1966,18 +2782,18 @@
       "Preferences": {
         "properties": {
           "locale": {
-            "title": "Locale",
-            "type": "string"
+            "type": "string",
+            "title": "Locale"
           },
           "timezone": {
-            "title": "Timezone",
-            "type": "string"
+            "type": "string",
+            "title": "Timezone"
           },
           "default_model_profile_id": {
             "anyOf": [
               {
-                "format": "uuid",
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
@@ -1986,13 +2802,13 @@
             "title": "Default Model Profile Id"
           }
         },
+        "type": "object",
         "required": [
           "locale",
           "timezone",
           "default_model_profile_id"
         ],
-        "title": "Preferences",
-        "type": "object"
+        "title": "Preferences"
       },
       "Progress": {
         "properties": {
@@ -2176,20 +2992,20 @@
         "type": "object"
       },
       "ReauthenticateRequest": {
-        "additionalProperties": false,
         "properties": {
           "password": {
+            "type": "string",
             "maxLength": 256,
             "minLength": 1,
-            "title": "Password",
-            "type": "string"
+            "title": "Password"
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "password"
         ],
-        "title": "ReauthenticateRequest",
-        "type": "object"
+        "title": "ReauthenticateRequest"
       },
       "Receipt": {
         "properties": {
@@ -2361,59 +3177,60 @@
       "RegisterAccepted": {
         "properties": {
           "accepted": {
+            "type": "boolean",
             "const": true,
-            "default": true,
             "title": "Accepted",
-            "type": "boolean"
+            "default": true
           },
           "message": {
-            "default": "If the address can be used, you will receive an email shortly.",
+            "type": "string",
             "title": "Message",
-            "type": "string"
+            "default": "If the address can be used, you will receive an email shortly."
           },
           "verification_required": {
+            "type": "boolean",
             "const": true,
-            "default": true,
             "title": "Verification Required",
-            "type": "boolean"
+            "default": true
           }
         },
-        "title": "RegisterAccepted",
-        "type": "object"
+        "type": "object",
+        "title": "RegisterAccepted"
       },
       "RegisterRequest": {
-        "additionalProperties": false,
         "properties": {
           "email": {
+            "type": "string",
             "format": "email",
-            "title": "Email",
-            "type": "string"
+            "title": "Email"
           },
           "password": {
+            "type": "string",
             "maxLength": 256,
             "minLength": 12,
-            "title": "Password",
-            "type": "string"
+            "title": "Password"
           },
           "display_name": {
+            "type": "string",
             "maxLength": 80,
             "minLength": 1,
-            "title": "Display Name",
-            "type": "string"
+            "title": "Display Name"
           },
           "terms_version": {
+            "type": "string",
             "maxLength": 40,
             "minLength": 1,
-            "title": "Terms Version",
-            "type": "string"
+            "title": "Terms Version"
           },
           "privacy_version": {
+            "type": "string",
             "maxLength": 40,
             "minLength": 1,
-            "title": "Privacy Version",
-            "type": "string"
+            "title": "Privacy Version"
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "email",
           "password",
@@ -2421,8 +3238,7 @@
           "terms_version",
           "privacy_version"
         ],
-        "title": "RegisterRequest",
-        "type": "object"
+        "title": "RegisterRequest"
       },
       "Report": {
         "properties": {
@@ -2577,62 +3393,62 @@
       "ResetDone": {
         "properties": {
           "reset": {
+            "type": "boolean",
             "const": true,
-            "default": true,
             "title": "Reset",
-            "type": "boolean"
+            "default": true
           }
         },
-        "title": "ResetDone",
-        "type": "object"
+        "type": "object",
+        "title": "ResetDone"
       },
       "ResetPasswordRequest": {
-        "additionalProperties": false,
         "properties": {
           "token": {
+            "type": "string",
             "maxLength": 200,
             "minLength": 20,
-            "title": "Token",
-            "type": "string"
+            "title": "Token"
           },
           "new_password": {
+            "type": "string",
             "maxLength": 256,
             "minLength": 12,
-            "title": "New Password",
-            "type": "string"
+            "title": "New Password"
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "token",
           "new_password"
         ],
-        "title": "ResetPasswordRequest",
-        "type": "object"
+        "title": "ResetPasswordRequest"
       },
       "Revoked": {
         "properties": {
           "revoked": {
+            "type": "boolean",
             "const": true,
-            "default": true,
             "title": "Revoked",
-            "type": "boolean"
+            "default": true
           }
         },
-        "title": "Revoked",
-        "type": "object"
+        "type": "object",
+        "title": "Revoked"
       },
       "RevokedCount": {
         "properties": {
           "revoked_count": {
-            "title": "Revoked Count",
-            "type": "integer"
+            "type": "integer",
+            "title": "Revoked Count"
           }
         },
+        "type": "object",
         "required": [
           "revoked_count"
         ],
-        "title": "RevokedCount",
-        "type": "object"
+        "title": "RevokedCount"
       },
       "RunAccepted": {
         "properties": {
@@ -3253,13 +4069,13 @@
       "SessionInfo": {
         "properties": {
           "session_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "Session Id",
-            "type": "string"
+            "title": "Session Id"
           },
           "device": {
-            "title": "Device",
-            "type": "string"
+            "type": "string",
+            "title": "Device"
           },
           "ip_prefix": {
             "anyOf": [
@@ -3273,25 +4089,26 @@
             "title": "Ip Prefix"
           },
           "created_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Created At",
-            "type": "string"
+            "title": "Created At"
           },
           "last_seen_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Last Seen At",
-            "type": "string"
+            "title": "Last Seen At"
           },
           "expires_at": {
+            "type": "string",
             "format": "date-time",
-            "title": "Expires At",
-            "type": "string"
+            "title": "Expires At"
           },
           "current": {
-            "title": "Current",
-            "type": "boolean"
+            "type": "boolean",
+            "title": "Current"
           }
         },
+        "type": "object",
         "required": [
           "session_id",
           "device",
@@ -3301,8 +4118,7 @@
           "expires_at",
           "current"
         ],
-        "title": "SessionInfo",
-        "type": "object"
+        "title": "SessionInfo"
       },
       "SimulateAccepted": {
         "properties": {
@@ -3609,20 +4425,20 @@
         "type": "object"
       },
       "TokenRequest": {
-        "additionalProperties": false,
         "properties": {
           "token": {
+            "type": "string",
             "maxLength": 200,
             "minLength": 20,
-            "title": "Token",
-            "type": "string"
+            "title": "Token"
           }
         },
+        "additionalProperties": false,
+        "type": "object",
         "required": [
           "token"
         ],
-        "title": "TokenRequest",
-        "type": "object"
+        "title": "TokenRequest"
       },
       "UnavailableCombination": {
         "properties": {
@@ -3648,66 +4464,62 @@
         "type": "object"
       },
       "UpdateMeRequest": {
-        "additionalProperties": false,
         "properties": {
           "display_name": {
             "anyOf": [
               {
+                "type": "string",
                 "maxLength": 80,
-                "minLength": 1,
-                "type": "string"
+                "minLength": 1
               },
               {
                 "type": "null"
               }
             ],
-            "default": null,
             "title": "Display Name"
           },
           "locale": {
             "anyOf": [
               {
+                "type": "string",
                 "maxLength": 20,
-                "minLength": 2,
-                "type": "string"
+                "minLength": 2
               },
               {
                 "type": "null"
               }
             ],
-            "default": null,
             "title": "Locale"
           },
           "timezone": {
             "anyOf": [
               {
+                "type": "string",
                 "maxLength": 64,
-                "minLength": 1,
-                "type": "string"
+                "minLength": 1
               },
               {
                 "type": "null"
               }
             ],
-            "default": null,
             "title": "Timezone"
           },
           "default_model_profile_id": {
             "anyOf": [
               {
-                "format": "uuid",
-                "type": "string"
+                "type": "string",
+                "format": "uuid"
               },
               {
                 "type": "null"
               }
             ],
-            "default": null,
             "title": "Default Model Profile Id"
           }
         },
-        "title": "UpdateMeRequest",
-        "type": "object"
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateMeRequest"
       },
       "Usage": {
         "properties": {
@@ -3905,31 +4717,31 @@
       "UserSummary": {
         "properties": {
           "user_id": {
+            "type": "string",
             "format": "uuid",
-            "title": "User Id",
-            "type": "string"
+            "title": "User Id"
           },
           "email": {
-            "title": "Email",
-            "type": "string"
+            "type": "string",
+            "title": "Email"
           },
           "display_name": {
-            "title": "Display Name",
-            "type": "string"
+            "type": "string",
+            "title": "Display Name"
           },
           "email_verified": {
-            "title": "Email Verified",
-            "type": "boolean"
+            "type": "boolean",
+            "title": "Email Verified"
           }
         },
+        "type": "object",
         "required": [
           "user_id",
           "email",
           "display_name",
           "email_verified"
         ],
-        "title": "UserSummary",
-        "type": "object"
+        "title": "UserSummary"
       },
       "ValidationCheck": {
         "properties": {
@@ -3961,6 +4773,46 @@
         "title": "ValidationCheck",
         "type": "object"
       },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
       "ValidationSummary": {
         "properties": {
           "checks": {
@@ -3990,14 +4842,14 @@
       "Verified": {
         "properties": {
           "verified": {
+            "type": "boolean",
             "const": true,
-            "default": true,
             "title": "Verified",
-            "type": "boolean"
+            "default": true
           }
         },
-        "title": "Verified",
-        "type": "object"
+        "type": "object",
+        "title": "Verified"
       },
       "Versions": {
         "properties": {

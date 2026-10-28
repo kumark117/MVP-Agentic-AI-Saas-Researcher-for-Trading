@@ -1,7 +1,7 @@
 """Worker process entry point: python -m alloyiq.worker
 
-Phase 0 stub. It starts, logs a heartbeat and shuts down cleanly on SIGTERM
-(compose stop) or Ctrl+C. Job claiming, leases and fencing arrive in phase 5.
+Runs the periodic loops (email delivery now; job claiming, sweepers and schedulers are
+added by later phases through worker.loops). Shuts down cleanly on SIGTERM / Ctrl+C.
 """
 
 from __future__ import annotations
@@ -12,8 +12,7 @@ import socket
 
 from alloyiq.config import get_settings
 from alloyiq.observability.logging import configure_logging, get_logger
-
-HEARTBEAT_S = 30.0
+from alloyiq.worker.loops import build_loops
 
 
 async def run() -> None:
@@ -31,14 +30,31 @@ async def run() -> None:
             pass
 
     worker_id = socket.gethostname()
-    log.info("worker_started", worker_id=worker_id, phase="0-stub")
-    while not stop.is_set():
-        log.info("worker_heartbeat", worker_id=worker_id)
-        try:
-            await asyncio.wait_for(stop.wait(), timeout=HEARTBEAT_S)
-        except TimeoutError:
-            continue
+    loops, cleanup = build_loops(settings, worker_id)
+    log.info("worker_started", worker_id=worker_id, loops=[n for n, *_ in loops])
+    tasks = [
+        asyncio.create_task(_periodic(name, fn, every, stop), name=name)
+        for name, fn, every in loops
+    ]
+    await stop.wait()
+    for t in tasks:
+        t.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
+    await cleanup()
     log.info("worker_stopped", worker_id=worker_id)
+
+
+async def _periodic(name: str, fn, every: float, stop: asyncio.Event) -> None:  # type: ignore[no-untyped-def]
+    log = get_logger(__name__)
+    while not stop.is_set():
+        try:
+            await fn()
+        except Exception:
+            log.exception("loop_failed", loop=name)
+        try:
+            await asyncio.wait_for(stop.wait(), timeout=every)
+        except TimeoutError:
+            pass
 
 
 if __name__ == "__main__":
