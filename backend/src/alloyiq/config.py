@@ -64,6 +64,8 @@ class Settings(BaseSettings):
     demo_daily_topup_limit_inr: Decimal = Decimal("1000.00")
     demo_checkout_max_inr: Decimal = Decimal("500.00")
 
+    worker_concurrency: int = 2  # jobs executed at once per worker process
+
     @property
     def is_prod(self) -> bool:
         return self.app_env == "prod"

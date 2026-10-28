@@ -290,3 +290,47 @@ From build prompt §21, plus anything found while building.
 - **Idempotency:** one helper (`application.idempotent.once`) claims the key, runs the
   mutation and saves the response in the same transaction. The fingerprint covers the
   concrete path and the body, so reusing a key on another checkout is a 409.
+
+## ADR-015 Durable runs, worker leases and SSE (accepted, P5)
+
+- **Admission** (`POST /research/runs`) is one transaction: idempotency claim, then a lock on
+  the estimate row, the wallet lock (which also serialises the plan-limit count), the demo
+  reservation, the real-spend reservation (account_day, then platform_day), the run, the
+  question message, the job, an outbox row, `run.queued` (seq 1), `run.updated` and
+  `balance.updated`. A failure anywhere rolls all of it back. The reservation is always the
+  estimate maximum, even when the client authorises more (D059).
+- **Claiming:** a `FOR UPDATE SKIP LOCKED` pick, oldest first, accounts with fewer active runs
+  first, never beyond the plan's active-run limit. Each claim bumps `jobs.generation`, copies
+  it to `research_runs.generation`, and records a `job_attempts` row. The lease is 30 s with
+  a heartbeat every 10 s; a failed heartbeat cancels the work without side effects.
+- **Fencing:** every workflow write goes through `RunHandle.tx()`, which locks the run row
+  `WHERE generation = :mine`. Zero rows raises `LostAuthority`. Terminal changes are CAS
+  updates over the legal source states (`domain.runs.sources_for`).
+- **Cancel race:** `RunLifecycle.finish` tries the requested terminal state. If the run is
+  `cancel_requested` by then, it resolves to `cancelled`, so a committed cancel always wins.
+  A run that is already terminal makes cancellation return 200 with that snapshot. Cancelling a
+  queued run is resolved in the API transaction with no model work.
+- **Cancel latency:** the watcher listens on `run_cancel` and polls every 1 s. When it sees
+  the flag, `RunHandle.check()` refuses new calls (`cancel_stop_calls_ms`) and the workflow
+  task is cancelled, which cancels branch tasks and open streams. `cancel_stop_branches_ms` is
+  recorded when the work has actually stopped.
+- **Ambiguous calls:** an `llm_calls` intent with no completion, left by a crash, a cancel
+  or a timeout, is marked `ambiguous` with `usage_status=unknown` and is non-billable. This
+  happens when a run resumes and again at settlement. The member is not charged and the
+  platform absorbs the cost (R043). Because the cost is unknown, settlement keeps the bounded
+  pending hold and counts the whole real-spend reservation as spent.
+- **Recovery sweeper** (worker, 15 s): an expired lease goes back to runnable with a
+  `recovering` activity event. On the third attempt the job is dead, an incident is written
+  and the run fails. Queued runs older than 5 minutes time out and their reservations are
+  released.
+- **SSE:** one LISTEN connection per process (`PgListener`). Notifications are only wake-ups;
+  events are always read from `run_events` / `account_events`. Order of work: subscribe,
+  check the cursor (400 if malformed, from another stream or ahead of it; 410 if older than
+  retention), replay, then go live. Heartbeat every 15 s; session recheck every 10 s (a
+  revoked session closes the stream); an inbox overflow past 100 notifications sends
+  `stream.reset_required` and closes. The limit of 3 concurrent streams per member is
+  enforced **in process**; a multi-replica deployment needs a shared counter (DV-06).
+- **Workflow seam:** `RunExecutor.execute(handle) -> RunResult`. P5 ships
+  `UnavailableWorkflow`, which fails runs explicitly with `workflow_not_installed`; P6
+  plugs in the LangGraph workflow. P5 tests drive a fake graph that writes clearly synthetic
+  usage through the real call-intent protocol.

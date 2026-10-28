@@ -21,6 +21,7 @@ from alloyiq.api.routes import auth as auth_routes
 from alloyiq.api.routes import billing as billing_routes
 from alloyiq.api.routes import catalog as catalog_routes
 from alloyiq.api.routes import me as me_routes
+from alloyiq.api.routes import research as research_routes
 from alloyiq.config import Settings, get_settings
 from alloyiq.observability.logging import configure_logging
 
@@ -45,6 +46,9 @@ def create_app(
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         yield
+        listener = svc.extra.get("listener")
+        if listener is not None:
+            await listener.stop()
         await svc.db.dispose()
 
     app = FastAPI(
@@ -66,5 +70,6 @@ def create_app(
     v1.include_router(me_routes.router)
     v1.include_router(catalog_routes.router)
     v1.include_router(billing_routes.router)
+    v1.include_router(research_routes.router)
     app.include_router(v1)
     return app

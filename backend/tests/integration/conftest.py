@@ -11,6 +11,7 @@ import os
 import uuid
 from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass
+from decimal import Decimal
 
 import pytest
 from sqlalchemy import Engine, create_engine, text
@@ -141,7 +142,8 @@ def grant(engine: Engine, t: Tenant, amount: str) -> None:
             ),
             {"t": tid, "a": t.account_id, "b": f"adjustment:test-{tid}"},
         )
-        for acct, amt in ((f"wallet:{t.account_id}", amount), ("sim_adjustments", f"-{amount}")):
+        amt_d = Decimal(amount)
+        for acct, amt in ((f"wallet:{t.account_id}", str(amt_d)), ("sim_adjustments", str(-amt_d))):
             c.execute(
                 text(
                     "INSERT INTO ledger_postings (transaction_id, account_id, ledger_account,"
@@ -151,10 +153,11 @@ def grant(engine: Engine, t: Tenant, amount: str) -> None:
             )
         c.execute(
             text(
-                "UPDATE wallets SET posted_credit = posted_credit + CAST(:m AS numeric)"
+                "UPDATE wallets SET posted_credit = posted_credit + greatest(CAST(:m AS numeric), 0),"
+                " posted_debit = posted_debit + greatest(-CAST(:m AS numeric), 0)"
                 " WHERE account_id = :a"
             ),
-            {"a": t.account_id, "m": amount},
+            {"a": t.account_id, "m": str(amt_d)},
         )
 
 
@@ -172,6 +175,10 @@ def make_settings(**overrides: object) -> object:
         "argon2_time_cost": 1,
         "argon2_memory_kib": 1024,
         "argon2_parallelism": 1,
+        # The shared test database accumulates today's platform spend holds across tests;
+        # budget behaviour has its own tests with explicit caps (test_wallet_ledger.py).
+        "real_spend_account_day_usd": Decimal("1000000"),
+        "real_spend_platform_day_usd": Decimal("1000000"),
     }
     base.update(overrides)
     return Settings(**base)  # type: ignore[arg-type]
@@ -200,3 +207,34 @@ def tenant_a(migrator: Engine) -> Tenant:
 @pytest.fixture
 def tenant_b(migrator: Engine) -> Tenant:
     return make_tenant(migrator)
+
+
+GOLD = "comex-gold-cont-ref"
+
+
+@pytest.fixture
+def enabled_gold(migrator: Engine) -> Iterator[uuid.UUID]:
+    """Enable the gold reference instrument for the test (seed leaves all disabled)."""
+    with migrator.begin() as c:
+        row = c.execute(
+            text("SELECT id, enabled, unavailable_reason FROM instruments WHERE canonical_id = :c"),
+            {"c": GOLD},
+        ).one()
+        c.execute(
+            text("UPDATE instruments SET enabled = true, unavailable_reason = NULL WHERE id = :i"),
+            {"i": row.id},
+        )
+    yield row.id
+    with migrator.begin() as c:
+        c.execute(
+            text("UPDATE instruments SET enabled = :e, unavailable_reason = :r WHERE id = :i"),
+            {"i": row.id, "e": row.enabled, "r": row.unavailable_reason},
+        )
+
+
+def profile_id(engine: Engine, slug: str = "deep") -> uuid.UUID:
+    with engine.connect() as c:
+        pid: uuid.UUID = c.execute(
+            text("SELECT id FROM model_profiles WHERE slug = :s"), {"s": slug}
+        ).scalar_one()
+    return pid

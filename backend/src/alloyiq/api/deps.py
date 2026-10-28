@@ -6,24 +6,34 @@ body, query or path can choose the account (D017).
 
 from __future__ import annotations
 
+import asyncio
 import hmac
 from dataclasses import dataclass, field
 from typing import Annotated, Any
 from urllib.parse import urlsplit
+from uuid import UUID
 
 import structlog
 from fastapi import Depends, Request, Response
+from sqlalchemy.ext.asyncio import AsyncConnection
 
 from alloyiq.adapters.payments import DummyPaymentProvider
+from alloyiq.adapters.pg_listen import PgListener
 from alloyiq.application.auth import AuthService, ClientInfo
 from alloyiq.application.billing import BillingService
 from alloyiq.application.budget import BudgetService, SpendCaps
 from alloyiq.application.catalog import CatalogService
+from alloyiq.application.lifecycle import RunLifecycle
+from alloyiq.application.research import ResearchService
+from alloyiq.application.settlement import SettlementService
+from alloyiq.application.streams import StreamService
 from alloyiq.application.wallet import WalletService
 from alloyiq.config import Settings
 from alloyiq.domain.errors import DomainError, ErrorCode
 from alloyiq.domain.identity import SESSION_ABSOLUTE, AccountContext
 from alloyiq.repositories.db import Database
+from alloyiq.repositories.events import ACCOUNT_CHANNEL, RUN_CHANNEL, append_account_event
+from alloyiq.repositories.runs import CANCEL_CHANNEL
 from alloyiq.security.passwords import Argon2Params, PasswordService
 from alloyiq.security.ratelimit import InMemoryRateLimiter, RateLimiter, RedisRateLimiter
 from alloyiq.security.tokens import CsrfTokens, pseudonym
@@ -69,7 +79,8 @@ def build_services(
     wallet = WalletService(db, opening_credit=settings.demo_opening_credit_inr)
     auth.on_verified.append(wallet.grant_opening_credit)
     svc.extra["wallet"] = wallet
-    svc.extra["budget"] = BudgetService(spend_caps(settings))
+    budget = BudgetService(spend_caps(settings))
+    svc.extra["budget"] = budget
     svc.extra["billing"] = BillingService(
         db,
         wallet,
@@ -77,7 +88,50 @@ def build_services(
         limiter,
         checkout_max=settings.demo_checkout_max_inr,
     )
+    lifecycle = RunLifecycle(SettlementService(wallet, budget))
+    svc.extra["research"] = ResearchService(
+        db, wallet=wallet, budget=budget, lifecycle=lifecycle, limiter=limiter
+    )
+    listener = LazyListener(url)
+    svc.extra["listener"] = listener
+    svc.extra["streams"] = StreamService(db, listener.get)
+    auth.on_revoked.append(notify_session_revoked)
     return svc
+
+
+async def notify_session_revoked(
+    conn: AsyncConnection, account_id: UUID, session_ids: list[UUID], reason: str
+) -> None:
+    """Account stream: other devices learn their session ended (R012)."""
+    for sid in session_ids:
+        await append_account_event(
+            conn, account_id, "security.session_revoked", {"session_id": sid, "reason": reason}
+        )
+
+
+class LazyListener:
+    """One LISTEN connection per API process, started on first use (SSE)."""
+
+    def __init__(self, url: str) -> None:
+        self.url = url
+        self._listener: PgListener | None = None
+        self._lock = asyncio.Lock()
+
+    async def get(self) -> PgListener | None:
+        if self.url == _PLACEHOLDER_DB:
+            return None
+        async with self._lock:
+            if self._listener is None:
+                self._listener = PgListener(
+                    self.url, (RUN_CHANNEL, ACCOUNT_CHANNEL, CANCEL_CHANNEL)
+                )
+                await self._listener.start()
+        return self._listener
+
+    async def stop(self) -> None:
+        if self._listener is not None:
+            await self._listener.stop()
+            self._listener = None
 
 
 def spend_caps(settings: Settings) -> SpendCaps:

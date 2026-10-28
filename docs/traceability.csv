@@ -16,15 +16,15 @@ R014,in,application.catalog; cli catalog verify,GET /catalog/instruments,seed: b
 R015,in,domain (Instrument); repositories.instruments,GET /catalog/instruments,backend/tests/integration/test_tools.py::test_reference_series_rules,P1 schema; P3 data
 R016,in,tools envelope; security validators,tool.completed,backend/tests/integration/test_tools.py (envelope; freshness; unit mismatch),P3/P6
 R017,in,application.catalog; adapters,GET /catalog/instruments,backend/tests/integration/test_tools.py::test_catalog_verifier; ADR-013,P3; all MVP instruments data_mode=reference (DV-11)
-R018,in,application.research (estimate),POST /research/estimates,,P5
-R019,in,application.research (admit),POST /research/runs,,P5; idempotency + atomic admission
-R020,in,application.research; worker,POST /research/runs; run.queued,,P5
+R018,in,application.research (estimate),POST /research/estimates,backend/tests/integration/test_runs.py::test_estimate_contract_and_validation,P5
+R019,in,application.research (admit),POST /research/runs,backend/tests/integration/test_runs.py::test_admission_is_atomic_and_idempotent; ::test_two_devices_racing_for_the_last_credit,P5
+R020,in,application.research; worker,POST /research/runs (Idempotency-Key),backend/tests/integration/test_runs.py::test_admission_is_atomic_and_idempotent,P5
 R021,in,workflows; agents,node.started; tool.completed,,P6
 R022,in,indicators; workflows (evidence_minimum_gate),get_technical_indicators,backend/tests/unit/test_indicators.py; test_tools.py::test_indicators_are_computed_server_side,P3 indicators; P6 gate
 R023,in,application.budget; adapters.AnthropicLLMGateway,limits in estimate,,P5/P6
-R024,in,domain (run state machine),run.* events; GET /research/runs/{id},,P5
-R025,in,application.research (cancel); worker,POST /research/runs/{id}/cancel; run.cancel_requested,,P5
-R026,in,worker (cancel watcher),run.finished,,P5; p95 latencies measured and recorded
+R024,in,domain (run state machine),GET /research/runs/{id},backend/tests/unit/test_run_state.py; backend/tests/integration/test_runs.py,P5
+R025,in,application.research (cancel); worker,POST /research/runs/{id}/cancel,backend/tests/integration/test_runs.py::test_cancel_during_parallel_branches; ::test_cancel_versus_success_race_has_one_outcome,P5
+R026,in,worker (cancel watcher),POST /research/runs/{id}/cancel,backend/tests/integration/test_runs.py::test_cancel_during_parallel_branches (latencies recorded),"P5; p95 measured per run, not load-tested (DV-06)"
 R027,in,application.research; worker scheduler,429 PLAN_LIMIT_REACHED,,P5
 R028,partial,frontend,all member screens,,P7; privileged admin screens deferred (DV-03)
 R029,in,frontend RunStatus/ActivityPanel; workflows,GET /research/runs/{id}/activity; activity.appended,,P6/P7; no chain-of-thought
@@ -64,7 +64,7 @@ R062,deferred,docs/ops,,,DV-06
 R063,deferred,docs/ops,,,DV-06
 R064,in,api (envelope; errors; middleware),/api/v1/*,backend/tests/unit/test_health.py; backend/tests/contract/test_contracts.py,P0 shell: {data;meta} envelope + problem+json + UUID request IDs; full registry P1+
 R065,in,api (idempotency),Idempotency-Key routes,,P5 and later
-R066,in,api SSE; frontend lib/sse/StreamController,GET /research/runs/{id}/events; GET /events,backend/tests/contract/test_contracts.py (event schemas),P5/P7
+R066,in,api SSE; frontend lib/sse/StreamController,GET /research/runs/{id}/events; GET /events,backend/tests/integration/test_sse.py,P5
 R067,in,(whole repo),,,ADR-001: Next.js + OO Python + LangGraph + MCP + PostgreSQL + LangSmith
 R068,partial,backend/tests; frontend tests; scripts/test.ps1,,scripts/test.ps1,P0 harness in place; suites grow each phase
 R069,partial,evaluations,,,P9; 30+ cases (DV-08)
