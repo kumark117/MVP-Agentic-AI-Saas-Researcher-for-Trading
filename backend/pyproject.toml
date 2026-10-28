@@ -1,0 +1,74 @@
+[project]
+name = "alloyiq"
+version = "0.0.1"
+description = "AlloyIQ: AI agent SaaS for metals-trading research (MVP)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "asyncpg>=0.32.0",
+    "fastapi>=0.162.0",
+    "pydantic>=2.14.1",
+    "pydantic-settings>=2.16.1",
+    "structlog>=26.1.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+alloyiq-admin = "alloyiq.cli.admin:main"
+
+[build-system]
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "hypothesis>=6.170.12",
+    "mypy>=2.4.0",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1",
+    "ruff>=0.17.3",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "RUF"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+packages = ["alloyiq"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+
+# Strict on the pure layers (build prompt section 4).
+[[tool.mypy.overrides]]
+module = ["alloyiq.domain.*", "alloyiq.application.*"]
+strict = true
+
+# asyncpg ships no type information.
+[[tool.mypy.overrides]]
+module = ["asyncpg"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: needs the compose PostgreSQL (scripts/test.ps1 starts it)",
+    "live: calls real paid providers; only with LIVE_PROVIDER_TESTS=1 and owner approval",
+]

@@ -1,0 +1,18 @@
+# Deviations log
+
+What the MVP does differently from Requirements v2 (R001-R074), and what would un-defer each.
+Source: build prompt §3.2 and §3.3. Add an entry whenever a deviation is needed.
+
+| # | R-ID(s) | Spec requires | MVP does instead | Risk | Un-deferred by |
+|---|---|---|---|---|---|
+| DV-01 | R009 | Optional Google OIDC login and verified identity linking | Not built. `auth_identities` (issuer, subject) table exists for later use | None for an email-only MVP; R009 makes Google optional | OD-7; a Google client ID and redirect allowlist |
+| DV-02 | R006, R011, R013 | Support, finance and platform roles; administrator MFA; 8 h privileged sessions; renewed MFA for sensitive actions | Roles `member` and `platform_admin` only in the data model. **No privileged function is reachable over HTTP**; admin is the host-run `alloyiq-admin` CLI. No MFA | Owner's host access is the only admin control; no audited remote admin | OD-7; MFA routes (Design §19) plus an admin UI |
+| DV-03 | R028 | Privileged administration screens | None; CLI only (see DV-02) | Same as DV-02 | Same as DV-02 |
+| DV-04 | R032, R037 (subscriptions), D065 | Simulated subscriptions, plan checkout, demo billing portal | One "Demo" plan row with fixed limits; no subscription checkout or portal. Top-up checkout, refunds and receipts are built | Plan-change paths untested | OD-7 |
+| DV-05 | R044, R048 | Privileged platform summary over HTTP | `alloyiq-admin summary --from --to` | No remote platform view | DV-02 resolved |
+| DV-06 | R059-R063 | Alerts, runbooks, 99.9% availability SLO, latency and capacity targets proven by load test, HA, multi-replica, RPO 5 min / RTO 60 min restore drills | Documented as future work in `docs/ops/`; a short runbook in P9. Single-host compose. Cancellation latencies are still measured (R026) | SLOs and recovery objectives are **not demonstrated** and must not be claimed | OD-5 (hosting); a load-test and restore-drill phase |
+| DV-07 | R040, R043 | Reconciliation against provider invoices | `cost_status=calculated` throughout; reconciliation job skeleton and `expense_reconciliation_items` table only | Calculated cost may drift from invoices; it is labelled calculated, never reconciled | Provider billing export access |
+| DV-08 | R069, R070 | At least 200 reviewed evaluation cases | At least 30 reviewed cases; harness ready for 200+ | Weaker quality evidence; release gates are measured on a smaller set | Domain reviewers' time |
+| DV-09 | R058 | Every production run traced in LangSmith | Traced when `LANGSMITH_API_KEY` is set; otherwise a local trace sink with an explicit `observability_gap` flag. OpenTelemetry exporter off by default | Missing traces in dev, but the gap is visible, never silent | Setting the key; OD-5 for an OTel backend |
+| DV-10 | R054, R055 | Deletion propagated within 30 days including third-party traces; restores replay tombstones; documented third-party retention | Retention classes, tombstones and a scheduled purge job for local data. LangSmith-side deletion and restore drills deferred | Third-party trace copies may outlive local deletion | OD-5, OD-6 |
+| DV-11 | R014-R017 | Licensed exchange data for MCX, COMEX, LME | Every MVP instrument is `data_mode=reference` (Yahoo continuous futures, Alpha Vantage reference series). MCX, LME, zinc and uranium are disabled with reasons | Not exchange-live; Yahoo is unlicensed and dev-only (ADR-006) | OD-1 |

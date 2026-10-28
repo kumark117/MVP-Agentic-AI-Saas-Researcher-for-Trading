@@ -1,0 +1,25 @@
+# The only origin the browser uses: http://localhost:8080 (ADR-002).
+{
+	admin off
+	auto_https off
+}
+
+:8080 {
+	# Internal-only endpoint: never reachable from the browser (Design section 15).
+	# (handle blocks are mutually exclusive; the longer path wins.)
+	handle /api/v1/health/ready {
+		respond 404
+	}
+
+	handle /api/* {
+		# flush_interval -1 disables response buffering so SSE streams immediately.
+		reverse_proxy api:8000 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		# WEB_UPSTREAM switches to host-run `pnpm dev` (scripts/dev.ps1 -HostWeb; ADR-008).
+		reverse_proxy {$WEB_UPSTREAM:web:3000}
+	}
+}

@@ -1,0 +1,75 @@
+r_id,mvp_status,module,route_or_event,test_evidence,notes
+R001,in,docs/traceability.csv; docs/deviations.md,,,Process: every MUST has owner + evidence + status; maintained every phase
+R002,in,(whole repo),,,Built from specs only; no four-agent code reused (build prompt section 1)
+R003,in,application.research; frontend features/research,POST /research/estimates; POST /research/runs; GET /research/runs/{id}/report,,P5-P7
+R004,in,domain (Signal; confidence); agents.SignalAgent,GET /research/runs/{id}/report,,P6; calibration_status=uncalibrated always in MVP
+R005,in,adapters.DummyPaymentProvider; billing,payment_mode=simulated on all billing responses,,P4; no card/bank/UPI fields exist anywhere
+R006,partial,domain (roles); cli.admin,,,member + platform_admin only; admin via CLI; no MFA (DV-02)
+R007,in,frontend,all screens,,P7; axe + keyboard Playwright checks; WCAG 2.2 AA target
+R008,in,application.auth,/auth/register /auth/verify-email /auth/login /auth/logout /auth/forgot-password /auth/reset-password /me/password /me/deletion-requests,,P2
+R009,deferred,,,,Google OIDC (DV-01); auth_identities table kept
+R010,in,application.auth; repositories.sessions,GET /me/sessions,,P2; multi-device run visibility proven in P5/P7
+R011,partial,application.auth,GET /me/sessions; DELETE /me/sessions/{id}; POST /auth/logout-all,,P2; privileged 8 h sessions + MFA deferred (DV-02)
+R012,in,api middleware (AccountContext); repositories (RLS),all private routes and SSE,,P1 RLS; P2 context; P5 SSE 15 s revocation close
+R013,partial,security; application.auth,POST /auth/reauthenticate,,P2; admin-MFA part deferred (DV-02)
+R014,in,application.catalog; cli catalog verify,GET /catalog/instruments,,P3; disabled combinations carry reasons
+R015,in,domain (Instrument); repositories.instruments,GET /catalog/instruments,,P1 schema; P3 data
+R016,in,tools envelope; security validators,tool.completed,,P3/P6
+R017,in,application.catalog; adapters,GET /catalog/instruments,,P3; all MVP instruments data_mode=reference (DV-11)
+R018,in,application.research (estimate),POST /research/estimates,,P5
+R019,in,application.research (admit),POST /research/runs,,P5; idempotency + atomic admission
+R020,in,application.research; worker,POST /research/runs; run.queued,,P5
+R021,in,workflows; agents,node.started; tool.completed,,P6
+R022,in,indicators; workflows (evidence_minimum_gate),get_technical_indicators,,P3 indicators; P6 gate
+R023,in,application.budget; adapters.AnthropicLLMGateway,limits in estimate,,P5/P6
+R024,in,domain (run state machine),run.* events; GET /research/runs/{id},,P5
+R025,in,application.research (cancel); worker,POST /research/runs/{id}/cancel; run.cancel_requested,,P5
+R026,in,worker (cancel watcher),run.finished,,P5; p95 latencies measured and recorded
+R027,in,application.research; worker scheduler,429 PLAN_LIMIT_REACHED,,P5
+R028,partial,frontend,all member screens,,P7; privileged admin screens deferred (DV-03)
+R029,in,frontend RunStatus/ActivityPanel; workflows,GET /research/runs/{id}/activity; activity.appended,,P6/P7; no chain-of-thought
+R030,in,frontend ReportPanel; agents.SignalAgent,GET /research/runs/{id}/report,,P6/P7
+R031,in,frontend about/,/about,,P9 content; opens in new tab
+R032,partial,frontend account; application.wallet,GET /account/balance; GET /billing/invoices,,P4/P7; subscription charges deferred (DV-04)
+R033,in,application.conversations,/conversations; /conversations/{id}/messages,,P8
+R034,in,application.history; application.exports,GET /research/runs; POST /exports,,P8
+R035,in,application.exports; security (CSV neutraliser),POST /exports; GET /exports/{id},,P8
+R036,in,adapters.DummyPaymentProvider,POST /billing/credit-checkouts; POST /billing/checkouts/{id}/simulate; POST /webhooks/payments/{provider} (404),,P4
+R037,partial,application.billing,POST /billing/credit-checkouts,,P4; subscription changes deferred (DV-04)
+R038,in,billing (ledger); application.wallet,GET /account/balance; GET /account/ledger,,P4; Hypothesis property tests
+R039,in,billing (rate cards),GET /catalog/prices,,P4; rate card v1 stays draft until OD-3
+R040,in,adapters.AnthropicLLMGateway; billing,GET /research/runs/{id}/usage,,P6; cost_status=calculated only (DV-07)
+R041,in,application.reports; billing,GET /research/runs/{id}/usage; GET /reports/summary,,P6/P8
+R042,in,application.budget,admission + per-call checks,,P4/P5
+R043,partial,application.reconciliation; worker scheduler,,,P5 24 h hold release; invoice reconciliation deferred (DV-07)
+R044,partial,application.reports,GET /reports/summary; GET /reports/models,,P8; platform summary via CLI (DV-05)
+R045,in,stats; application.reports,GET /reports/summary,,P8
+R046,in,stats (percentiles),GET /reports/summary,,P8; percentile_cont; null on empty; warn below 100
+R047,in,stats (success rate),GET /reports/summary,,P8
+R048,in,application.reports,GET /reports/summary,,P8; 90-day sync cap; 30 s cache; window basis per metric
+R049,in,security; api schemas; tools,all boundaries,,P1-P6
+R050,in,security (taint); agents prompts,,,P6
+R051,in,security validators; workflows (handoff_validation),validation.completed,,P6; injection + unit-mix fixtures
+R052,in,mcp_server; security (egress),,,P3
+R053,in,observability; repositories (audit_events),,,P1 tables; P2 onward audit writes
+R054,partial,worker (purge); application.deletion,POST /me/deletion-requests,,P9; third-party trace deletion deferred (DV-10)
+R055,partial,docs/ops,,,P9; restore drills deferred (DV-10)
+R056,in,worker (leases; fencing; recovery sweeper),,,P5
+R057,in,adapters (deadlines; retries; circuit breakers),,,P3/P6
+R058,partial,observability (TraceSink; LangSmith),,,P6; gap flag when no key (DV-09)
+R059,deferred,docs/ops,,,DV-06; runbook-lite in P9
+R060,deferred,docs/ops,,,DV-06
+R061,deferred,docs/ops,,,DV-06
+R062,deferred,docs/ops,,,DV-06
+R063,deferred,docs/ops,,,DV-06
+R064,in,api (envelope; errors; middleware),/api/v1/*,backend/tests/unit/test_health.py,P0 shell: {data;meta} envelope + problem+json + UUID request IDs; full registry P1+
+R065,in,api (idempotency),Idempotency-Key routes,,P5 and later
+R066,in,api SSE; frontend lib/sse/StreamController,GET /research/runs/{id}/events; GET /events,,P5/P7
+R067,in,(whole repo),,,ADR-001: Next.js + OO Python + LangGraph + MCP + PostgreSQL + LangSmith
+R068,partial,backend/tests; frontend tests; scripts/test.ps1,,scripts/test.ps1,P0 harness in place; suites grow each phase
+R069,partial,evaluations,,,P9; 30+ cases (DV-08)
+R070,partial,evaluations; scripts/test.ps1,,,P9; gates on reduced set (DV-08)
+R071,partial,docs,,,Capacity and recovery drills deferred (DV-06)
+R072,in,docs/decisions.md (open decisions),,,Tracked as OD-1..OD-9; nothing invented
+R073,in,docs/deviations.md,,,Live payments/teams/scheduling out of scope
+R074,in,docs/decisions.md,,,Owner approves behaviour; ADRs record technical changes

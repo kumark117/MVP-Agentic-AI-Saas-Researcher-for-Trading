@@ -1,0 +1,8 @@
+# LF everywhere in the repo (build prompt section 0). PowerShell 5.1 runs LF scripts fine.
+* text=auto eol=lf
+
+*.docx binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

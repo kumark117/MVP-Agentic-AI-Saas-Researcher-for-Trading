@@ -1,0 +1,176 @@
+
+AI Agentic Saas Researcher for Trading
+Requirements specification version 2
+Prepared for Kumar Krishnamoorthy • 24 October 2026 • Document version 2 for product and API release 1
+This document specifies the required behavior, information, quality attributes, externally visible interfaces and acceptance conditions for a new trading research SaaS. It includes the functional specification: what users can do, what the system returns, how errors appear and which business rules apply. The companion design specification explains components, classes, storage structures, protocols and algorithms that implement these requirements.
+Payments are simulated. Model and data calls, measured token usage, provider expenses, performance measurements and research results are real. No customer money is collected. This document describes requirements to implement and verify; it does not claim that an application has been built or certified production ready.
+The revised combined specification, version 1 revision 1 with 116 requirements, is the source baseline. This split reorganizes that baseline and makes acceptance behavior clearer. R identifiers below are the identifiers for this requirements document. The companion design retains legacy identifiers only as implementation cross-references and maps its sections to these R identifiers. If a design choice conflicts with a required behavior here, resolve the conflict before implementation; do not silently change the behavior.
+Contents
+1 How to read these specifications
+2 Product goals scope and people
+3 Registration identity and multiple devices
+4 Catalogue and evidence requirements
+5 Research journey and run behavior
+6 Frontend functional specification
+7 Interaction history and exports
+8 Payment simulation and cost accounting
+9 Metrics and reports
+10 Security validation and privacy
+11 Reliability and operability
+12 Interfaces and mandated constraints
+13 Functional scenarios and acceptance
+14 Decisions exclusions and change control
+15 Coverage guide and source record
+
+1 How to read these specifications
+A requirements specification answers what must be achieved and how success will be judged. A design specification answers how the solution will achieve it. A functional specification is normally the behavioral portion of the requirements or a detailed companion; it is not inherently synonymous with technical design. Organizations use these names differently, so this document defines its own boundary explicitly.
+R001. MUST and SHALL indicate mandatory release obligations. SHOULD permits a documented exception. Proposed numerical service levels are targets until measured under the stated workload. Every mandatory requirement shall have an implementation owner, test or operational evidence and release status; unresolved mandatory requirements block release unless the product owner approves a recorded scope change.
+R002. The existing four-agent project is inspiration, not the implementation base or proof of production capability. The new product shall independently implement registration, account isolation, durable research, cost reporting, history, observability and safe operations. Claims of supported venues, models and source data must be verified for this product.
+2 Product goals scope and people
+R003. A member shall select an available metal, exchange, exact instrument or futures contract, research horizon and approved model profile, review a hypothetical spending ceiling, launch research, observe progress, cancel if needed and retrieve a cited report from any authenticated device.
+R004. Research outputs shall be BUY, SELL, HOLD or NO_SIGNAL. HOLD means available evidence supports holding; NO_SIGNAL means the evidence or validation does not support a reliable directional output. Reports shall explain the horizon, assumptions, risks, opposing evidence, freshness and relevant limitations. A confidence score shall not be presented as a calibrated probability unless calibration is demonstrated.
+R005. Version 1 excludes broker orders, custody, trading-capital balances, autonomous investment execution, real customer payments and externally purchased subscriptions. Demo credit is non-redeemable service credit with no monetary value. The platform pays real model and data-provider expenses. No card, bank or UPI details shall be collected.
+R006. Roles shall be member, support, finance administrator and platform administrator. A version 1 account is personal and has one owner. Support access shall expose redacted operational information; finance access shall not grant unrestricted prompt access. Privileged access shall require MFA and an audit trail. Shared workspaces are future scope.
+R007. The user interface shall support mobile and desktop use and target WCAG 2.2 AA. Users shall be able to navigate by keyboard, identify labelled controls, retain focus after updates, pause log autoscroll and distinguish errors without relying on color. Live accessibility announcements shall summarize progress instead of announcing each token or event.
+3 Registration identity and multiple devices
+R008. Support email and password registration, email verification, login, logout, password recovery, password changes and account deletion requests. Recovery responses shall not disclose whether a submitted email exists. Verification and reset tokens shall be single use and expire after 30 minutes. Password reset shall revoke existing sessions.
+R009. Google login shall be optional and may be disabled without breaking password login. A Google-only member shall be able to establish password access through verified recovery. An external identity shall be linked only through proof of control of the existing account and a freshly authenticated external identity; matching email alone is insufficient.
+R010. A member shall be able to use several independently authenticated devices simultaneously. The account's history, balances and run states are shared; session revocation remains device-specific unless logout-all is requested. Viewing a run on a second device shall not duplicate its execution, reservation or hypothetical debit.
+R011. Members shall see a session inventory with approximate device information, creation time, last activity, expiry and current-session marker. They shall revoke one session or all sessions. Sessions default to 24-hour idle and 30-day absolute expiry. Privileged sessions expire within 8 hours and require renewed MFA for sensitive actions.
+R012. User and account authorization shall apply to every private resource, export, conversation and live stream. Another account's opaque resource ID shall return an inaccessible-resource response without exposing its contents. Expired or revoked sessions shall stop active SSE access within 15 seconds. A resource owner supplied by the browser is not trusted identity evidence.
+R013. Authentication and recovery shall resist enumeration, automated abuse and credential leakage. Secrets and session credentials shall not appear in page URLs, browser-readable persistent storage, logs, model prompts or exports. Sensitive account changes require authentication refreshed within 5 minutes. Administrator MFA cannot be removed if it would leave a privileged account unprotected.
+4 Catalogue and evidence requirements
+R014. Initial candidate metals are gold, silver, copper, zinc and uranium; candidate venues are MCX, COMEX and LME. The product shall enable only verified instrument–vendor combinations and show a reason for unavailable combinations. It shall not assume that every metal is traded on every listed venue.
+R015. Each enabled instrument shall have a stable identity, metal, exchange or reference-market designation, spot or futures type, contract expiry where applicable, quote currency, unit, source symbol, timezone, trading calendar, freshness policy and entitlement. Reference commodity data shall not be represented as live exchange-contract pricing.
+R016. Observations shall carry source, observation time, fetch time, known delay, market-open state and quality status. Currency conversions shall show a source and timestamp. A converted global quote shall not be represented as a genuine local exchange quote. Units, dates and futures expiries must remain consistent across the report.
+R017. Vendor coverage, frequency, quotas and redistribution rights shall be confirmed before enabling an instrument. Synthetic and historical demo data shall be clearly marked and never presented as live evidence. If suitable licensed data is unavailable, disable the instrument or expose a distinctly identified reference-data mode with its limitations.
+5 Research journey and run behavior
+R018. Before admission, the member shall receive an estimate containing the normalized request, model profile and permitted fallbacks, assumed limits, rate version, estimated range, maximum hypothetical charge and expiry. The estimate expires after 5 minutes. Editing the request requires a new estimate; a changed request cannot consume an old authorization.
+R019. Admission shall verify account status, entitlement, catalogue availability, request validity, quotas, demo credit and independent real provider-spend allowance. A successful admission returns a durable run ID and queued status promptly. A duplicate identical admission request shall return the same run; a reused idempotency key with a changed request shall be rejected.
+R020. An accepted run shall survive browser refresh, tab closure and disconnection. It shall be visible to every authorized session of the account. Creation of the run, reservation and execution intent shall be atomic: none may be silently orphaned. Overload or insufficient capacity must produce an explicit retryable rejection rather than an accepted run that disappears.
+R021. The research process shall collect price, relevant news and technical evidence in parallel and then synthesize validated evidence. Model tool observations may return to the requesting agent for bounded continuation. The final synthesis shall consume a normalized evidence bundle, with citations and quality flags, rather than trust arbitrary raw transcripts.
+R022. Technical indicators shall be calculated deterministically from validated historical data. The model may explain them but shall not invent numeric values. Version 1 requires a valid matching quote, enough historical bars for the selected indicators and at least one relevant cited news source; otherwise return an explicit incomplete or abstaining report.
+R023. The run shall have finite call, token, time and cost budgets. Initial limits are 24 model calls, 30 tool calls and 120 seconds active execution per run; each branch is bounded by 6 model calls and 10 tool calls. One structured-output repair is allowed within those bounds. Actual limits shall be versioned and included in the estimate.
+R024. Public states shall be queued, running, cancel_requested, succeeded, incomplete, failed, cancelled and timed_out. The last five are terminal. Accounting settlement has a separate status and may finish after the report. Every transition shall be visible in history and live events; terminal outcomes shall not be overwritten by a stale or late worker.
+R025. A cancellation request shall be durable and idempotent. Once accepted before terminal completion, it shall prevent new work and propagate to active parallel branches. A race between completed work and cancellation has one authoritative outcome. Disconnection is not cancellation. The UI shall explain that provider work already incurred can still have a real platform cost.
+R026. Cancellation shall stop admission of new calls within 2 seconds p95 and local branch work within 5 seconds p95 under the test profile. Confirmed usage and unknown usage shall remain visible after cancellation, failure and timeout. Unused demo reservations shall be released; bounded uncertain settlement shall be resolved or released under the accounting policy.
+R027. Initial per-member limits are 2 active runs, 5 queued runs and 3 SSE streams. Jobs waiting beyond 5 minutes expire without new model work. Scheduling shall prevent one account from starving others. Limits may vary by plan and operational capacity, but shall be enforced server-side and shown to users before submission.
+6 Frontend functional specification
+R028. Required screens are authentication, dashboard and research, run detail, history, usage reports, account and demo billing, profile and security, About and privileged administration. The research form shall include dependent metal and exchange selection, exact instrument, horizon, model profile, optional bounded question, freshness, estimate, ceiling and demo balance.
+R029. The run screen shall show lifecycle state, timing, progress, sanitized activity, evidence, report summary and usage. Activity includes agent, approved action, tool name, observation summary, elapsed time, retry and validation result. It shall exclude private chain-of-thought and hidden model reasoning. Brief evidence-based explanations are permitted.
+R030. A report shall include instrument and contract snapshot, horizon, signal or abstention, confidence classification, supporting and opposing evidence, citations, assumptions, limitations, data-as-of and validation summary. Unsafe or unsupported output must not appear as a verified recommendation. Citation links and rendered model text shall not execute unsafe content.
+R031. About shall open in a new tab and explain functionality, sources, supported coverage, delays, model use, simulated payments, real provider expenses, cancellation, privacy, evaluation and limitations. It shall not expose internal service addresses, credentials or private traces.
+R032. Account screens shall distinguish demo posted, reserved, pending and available balances; hypothetical run and subscription charges; actual provider expense; and zero customer money collected. Demo checkout, refund and sample receipt views shall prominently display Simulation only. Sample receipts shall not be represented as tax invoices.
+7 Interaction history and exports
+R033. Persist conversations, messages, submitted questions, run associations, reports and feedback. Messages are immutable after submission, account-owned and limited to 4,000 characters. A follow-up is separately estimated and runs only after the previous run is terminal. New messages shall not silently alter an executing request.
+R034. Users shall filter and page their run history by date, instrument, model and state; reopen reports and itemized usage; rate reports; and export their owned runs, usage or account data. Re-running creates a new run with a new estimate. Large exports are asynchronous and their downloads are authorized and time limited.
+R035. Exports shall preserve timestamps, model/rate versions, token and cost provenance and simulation labels. They shall exclude secrets and other accounts' data. CSV exports shall prevent spreadsheet-formula injection. Account deletion must not create a permanently usable export link.
+8 Payment simulation and cost accounting
+R036. Only dummy customer payment processing is enabled in this release. Simulate success, failure, pending, expiry, duplicate events and refunds without calling a payment network. Every relevant response shall identify payment_mode=simulated and zero money collected. Public payment webhooks are disabled. Live commerce requires a separate scope decision.
+R037. Demo checkout and subscription changes shall require authentication, ownership checks, CSRF protection, rate limits and idempotency. Only trusted server-side simulation events can change the demo wallet. A browser-supplied amount or success flag alone shall not modify its balance. Top-ups are bounded by daily policy and have no redemption value.
+R038. Demo balance reservations and debits shall be exact and concurrency-safe across devices. Available demo credit equals posted credit less posted debits less active reservations. One business event shall produce one posting set; corrections use reversals. The simulated ledger shall remain separate from real expenses and shall never be reported as cash revenue.
+R039. Versioned pricing shall record provider, exact model, effective interval, token categories, applicable cache behavior, optional simulated markup and conversion policy. Avoid counting a provider's token subset twice. Monetary arithmetic shall be exact, with a documented final rounding rule. Customer demo currency is INR; actual expense currency shall remain explicit.
+R040. Measure tokens from actual provider usage or reconciled provider records, including attempts, retries, model IDs and call IDs. Tokenizer estimates may be displayed as estimates only. Unknown usage after an interruption must remain explicitly unknown until resolved. Costs calculated from usage and a rate card shall be labelled calculated until reconciled with provider billing.
+R041. Personal reports shall distinguish actual platform provider expense, hypothetical customer charge, demo balance movement and zero money collected. Validation repairs, evaluation and recovery expense remains included in actual platform cost even when excluded from demo customer debit. A cache hit with no model call has zero LLM token expense; any other cost is labelled separately.
+R042. Demo credits do not authorize unlimited real spending. Independent per-run, account-day and platform-day provider-spend limits shall stop further calls when exhausted. Model fallbacks must stay within authorized profiles and budgets. Resets, top-ups, subscription changes and repeated requests shall not bypass those controls.
+R043. Reconcile actual usage separately from demo payment and ledger events. Uncertain demo holds may remain for up to 24 hours, after which unresolved amounts are released; unmatched actual provider expense is absorbed by the platform. Recovery must not duplicate demo debits or hide duplicated real costs. Record all adjustments and reconciliation outcomes.
+9 Metrics and reports
+R044. Provide account summaries, latest-run detail, model comparisons and a privileged platform summary. Report submitted, queued, active and each terminal state, pending accounting, tokens by category, actual provider expense, hypothetical charges, cache hits, retries, tool errors, validation failures and security blocks. Include data_as_of and the applied filters.
+R045. Measure queue time, active execution, end-to-end time, time to first activity, time to first model token, cancellation response and individual provider/tool latency separately. Return p50, p95 and p99 with milliseconds, population definition and sample count. Unknown or not-yet-observed measurements shall be null, never fabricated as zero.
+R046. Default success latency percentiles use succeeded runs whose terminal time falls within the requested half-open UTC interval. Report all-terminal and queue distributions separately. Empty populations return null; populations below 100 produce a warning. Never average daily percentiles into a period percentile. Exact and approximate methods shall be labelled.
+R047. Default success rate is succeeded divided by all executed terminal runs excluding user cancellation; include incomplete, failed and timed-out executions in the denominator. Show numerator and denominator, plus separate cancellation and queue-expiry counts. Availability, research correctness and execution success are distinct measures.
+R048. Report windows shall specify whether counts use submission time, terminal time or posting time. Initial synchronous reports span at most 90 days; larger exports are asynchronous. Aggregation freshness is at most 30 seconds under normal operation. Members see only their own data; platform summaries do not grant unrestricted prompt access.
+10 Security validation and privacy
+R049. Validate identity, authorization, shape, size, type, scope, domain values, quotas and budgets before each applicable call. Validate external API/MCP results for error flags, schema, range, provenance, timestamps, units, instrument match and completeness. HTTP success or valid JSON alone is insufficient evidence of a valid observation.
+R050. All user text, news extracts, external tool output, prior reports and model outputs shall be treated as untrusted data. Carry provenance and trust classifications across steps. An instruction hidden in evidence must not gain the authority to call arbitrary tools, disclose secrets, alter billing or access another account.
+R051. Unsafe handoffs, stale quotes, conflicting contracts, unsupported numbers and missing citations shall be blocked, quarantined or converted into explicit incomplete results. Example acceptance cases include a malicious article asking for token export and a USD-per-ounce quote mixed with INR-per-kilogram data without verified conversion.
+R052. AI tools shall be bounded and allowlisted. Prevent arbitrary code execution, SQL, payment mutation, unsafe URL fetching, SSRF, script injection and exfiltration. Combine deterministic permissions and network controls with input/output checks and attack detection. No requirement claims complete elimination of prompt injection.
+R053. Secrets shall be protected outside user content and routine application records. Private traces and logs shall be redacted and access-controlled. Changes to account security, privileged access, run state, budgets and demo accounting shall have a correlated audit trail. Traceability shall not disclose another user's inputs through shared dashboards.
+R054. Provide account deletion, session revocation and propagation to eligible messages, reports, exports, artifacts and traces within 30 days. Initial retention is 30 days for SSE replay, 90 days for detailed activity/traces, and 12 months for reports, history and demo transactions. Actual provider expense retention requires an applicable accounting policy; scoped legal holds and backup expiry are documented.
+R055. Restoration shall reapply deletion tombstones and preserve account isolation. Users shall be told what data is retained and why. Third-party trace, model and data-provider retention settings shall be documented for the chosen deployment and checked against the product's privacy commitments.
+11 Reliability and operability
+R056. Accepted research shall use durable execution intent and recoverable state. A lost notification, Redis outage or worker restart shall not erase accepted work. Recovery shall prevent stale workers from overwriting a new execution. Reuse persisted completed outputs; ambiguous chargeable calls require reconciliation or an explicit platform-paid recovery policy.
+R057. Bound provider calls with explicit deadlines, finite retries and rate control. Retry transient idempotent reads at most twice by default; do not blindly retry a generation whose acceptance is unknown. Use circuit breakers, backpressure, fair admission and emergency provider disable. A failed dependency shall yield an explicit state and reason.
+R058. Instrument every accepted run across ingress, queue, worker, graph node, model, MCP tool, validation, report and accounting. Correlate request, trace, run, account pseudonym, call, attempt and deployment versions. Every production run shall be traceable in LangSmith with redaction. Exporter outages shall preserve work and expose telemetry gaps instead of blocking research.
+R059. Operators shall see alerts for availability burn, queue age, worker failure, spend caps, unresolved usage, ledger mismatch, stale market data, security incidents and trace backlog. Provide runbooks, incident ownership and documented recovery procedures. A runnable demo alone does not satisfy operational acceptance.
+R060. Target 99.9% monthly API availability for eligible requests. Dependency-caused failures count in the user-facing measure; invalid requests and intentional quota rejection are excluded but reported separately. Overload shall remain visible. Availability must be measured at the user-facing boundary rather than inferred from process uptime.
+R061. Under the documented capacity profile, target ordinary-read p95 below 300 ms and p99 below 800 ms, run-admission p95 below 700 ms, queue p95 below 5 seconds, and succeeded research p95 below 60 seconds and p99 below 120 seconds. Include provider latency and publish failures/timeouts separately to avoid hiding slow failed runs.
+R062. Initial sizing targets are 1,000 registered members, 200 simultaneous authenticated users, 100 concurrent executions, 50 ordinary REST requests per second and 500 SSE connections. Prove these through load testing with adequate provider quotas. Lower actual provider capacity must reduce admission safely; it does not justify an unbounded backlog.
+R063. Use encrypted backups, point-in-time recovery and tested rollback. Proposed database objectives are RPO at most 5 minutes and RTO at most 60 minutes, verified quarterly. Include artifacts, provider usage reconciliation and demo balance recovery in the drill; a restored database alone is not complete application recovery.
+12 Interfaces and mandated constraints
+R064. The browser shall use authenticated versioned HTTPS REST for commands and reads and SSE for progress. Calls use stable typed payloads, explicit error codes, UTC timestamps, pagination, correlation IDs and well-defined monetary units. Breaking interface changes require version review. The full route and event registry resides in the companion design specification.
+R065. Commands that could duplicate a run, checkout, refund or export shall have idempotent outcomes. Reusing an operation key with changed content is an explicit conflict. Unauthorized resources shall not reveal their existence. Errors shall be useful to users without revealing internal exceptions or secrets.
+R066. SSE shall be replayable with stable ordered event IDs and account authorization. Delivery may be at least once; clients deduplicate and recover from expired cursors through a fresh snapshot. Heartbeat cadence is 15 seconds. Slow consumers shall not block workers; cross-device changes target 2 seconds p95 within the capacity profile.
+R067. User-mandated implementation constraints are a good Next.js frontend, reusable OO Python modules and classes, LangChain and/or LangGraph, MCP call validation, PostgreSQL for identity/accounts/audits/history, and LangSmith for AI observability. These are explicit constraints on an otherwise behavior-focused requirements document. Their exact architecture belongs in the design.
+13 Functional scenarios and acceptance
+Scenario
+Preconditions and required outcome
+Register and research
+Verified identity, enabled instrument and adequate allowed budgets; one admitted run returns an ID and becomes observable without holding the request open
+Two devices use final demo credit
+Concurrent admission yields only affordable reservations; no negative available balance, duplicate charge or orphan run
+Repeat an admission request
+Same idempotency key and body returns the same run; changed body returns conflict
+Disconnect and reopen
+Work continues; an authorized session retrieves the snapshot and replays retained events without starting new work
+Cancel during parallel work
+A durable accepted cancellation prevents new calls, stops local branches and records confirmed or unknown expense
+One branch has invalid evidence
+No fabricated recommendation; return a documented incomplete, failed or NO_SIGNAL outcome under the evidence rule
+Malicious evidence
+Secret-export instruction cannot gain tool or account authority; record rejection without exposing secrets
+Simulated checkout
+Success adds one demo credit event; failure/expiry add none; repeats do not double-credit; real money collected remains zero
+Unknown provider usage
+Show unknown, reconcile later, and distinguish calculated expense from reconciled cost; do not fill actual tokens with guesses
+Revoked session
+REST is denied and active stream closes within 15 seconds; other authorized device sessions remain independently controlled
+Trace service outage
+Research and durable records continue; exporter backlog and observability gap are visible
+Recovery and deletion
+Restore within the tested objective, reconcile usage and demo events, and reapply account-deletion tombstones
+
+R068. Automated verification shall cover domain rules, account isolation, ledger invariants, migrations, recovery, cancellation, API/event contracts and frontend journeys. Use controlled provider fixtures plus a bounded real-provider benchmark and identify which results are simulated. Security review includes dependency, secret and access-control checks.
+R069. Establish at least 200 reviewed evaluation cases across instruments, market regimes, closed markets, stale/missing data, unit errors, contradictory sources, indirect injection and provider faults. Record model, prompt, graph, dataset and evaluator versions. Runtime deterministic checks apply to every relevant boundary; costly judges may be sampled and are platform expenses.
+R070. Proposed release quality gates require all critical authorization, accounting, schema, numerical and fixed adversarial-suite checks to pass; at least 95% citation support and evidence relevance; no critical security defect; and no approved-benchmark regression greater than 2 percentage points. Trading-return backtests and calibrated confidence are separate studies, not implied by those quality gates.
+R071. Acceptance requires traceable evidence for every mandatory requirement, published and checked API/event schemas, verified instrument rights and coverage, actual cost reporting, zero real customer collections, isolation proof, measured capacity and recovery drills. A security-suite pass is not proof of immunity to unseen attacks; document residual risk.
+14 Decisions exclusions and change control
+R072. Resolve exact licensed instruments, provider endpoints and entitlements, approved model IDs and regions, actual rates and FX sources, real spending limits, demo starting credit/top-up limits, privacy/expense retention and incident ownership before release. Do not invent commercial facts to fill configuration gaps.
+R073. Live merchant onboarding, real subscription pricing, taxes, payment webhooks and customer cash collection are deferred and are not release blockers for the simulation release. Teams, scheduled research, broker integration, adaptive routing and regional failover are additional scope unless separately approved. Existing reliability and security obligations are not optional upgrades.
+R074. The requirements owner approves behavior and acceptance changes; the technical owner controls design revisions that preserve those requirements. A change affecting public routes, event schemas, stored financial semantics, model safety, privacy or spending requires an impact review across both specifications and their summaries.
+15 Coverage guide and source record
+Requirement group
+Legacy baseline coverage
+Primary design coverage
+R001–R007 product and roles
+Legacy 001–007 and 024
+Design sections 1 and 2
+R008–R017 identity and catalogue
+Legacy 008–017 and 004–006
+Design sections 3 and 4
+R018–R027 execution
+Legacy 010–011 and 031–053
+Design sections 5 through 8
+R028–R035 UI and history
+Legacy 018–024 and 052
+Design sections 2 and 12 through 14
+R036–R043 simulation and costs
+Legacy 054–065 and 113–116
+Design sections 9 and 20
+R044–R048 reports
+Legacy 066–074 and 104–107
+Design sections 10 and 19
+R049–R055 safety and privacy
+Legacy 039–047 and 075–079
+Design sections 7 and 11
+R056–R063 operations
+Legacy 025–026 and 092–103
+Design sections 6 and 17 through 19
+R064–R067 interfaces and constraints
+Legacy 025–038 and 080–091
+Design sections 12 through 16
+R068–R074 acceptance and governance
+Legacy 100–112 and revision amendment
+Design sections 18 through 21
+
+Source: AI_Agentic_Saas_Researcher_for_Trading_Requirements_v1.docx, version 1 revision 1, including the simulated-payment amendment. The four-agent project is inspiration only. Integration references and detailed contracts are collected in the companion design document. This split changes document organization and makes implicit acceptance conditions explicit; numerical targets remain proposals until tested.

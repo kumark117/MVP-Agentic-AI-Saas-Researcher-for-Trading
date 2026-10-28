@@ -1,0 +1,124 @@
+# AlloyIQ dev topology (build prompt section 6; ADR-002).
+# Browser -> caddy:8080 only. mcp is reachable from the worker only.
+# Data-service ports are published on 127.0.0.1 for host-run tests and tools.
+
+name: alloyiq
+
+x-backend: &backend
+  build:
+    context: ./backend
+  env_file: .env
+  environment: &backend-env
+    # Built here from per-role passwords so each is written once (ADR-007).
+    DATABASE_URL: postgresql+asyncpg://alloyiq_api:${ALLOYIQ_API_DB_PASSWORD}@postgres:5432/alloyiq
+    DATABASE_WORKER_URL: postgresql+asyncpg://alloyiq_worker:${ALLOYIQ_WORKER_DB_PASSWORD}@postgres:5432/alloyiq
+    DATABASE_MIGRATOR_URL: postgresql+asyncpg://alloyiq_migrator:${ALLOYIQ_MIGRATOR_DB_PASSWORD}@postgres:5432/alloyiq
+    WATCHFILES_FORCE_POLLING: "true"  # Windows bind mounts do not deliver inotify events
+  volumes:
+    - ./backend/src:/app/src
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "8080:8080"
+    environment:
+      WEB_UPSTREAM: ${WEB_UPSTREAM:-web:3000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+    volumes:
+      - ./frontend:/app
+      - web_node_modules:/app/node_modules
+      - web_next:/app/.next
+    restart: unless-stopped
+
+  api:
+    <<: *backend
+    command: >
+      uvicorn alloyiq.api.app:create_app --factory --host 0.0.0.0 --port 8000
+      --reload --reload-dir /app/src --proxy-headers --forwarded-allow-ips=*
+      --no-access-log
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=3).status == 200 else 1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  worker:
+    <<: *backend
+    command: python -m alloyiq.worker
+
+  mcp:
+    <<: *backend
+    command: python -m alloyiq.mcp_server
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8100/health', timeout=3).status == 200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      ALLOYIQ_API_DB_PASSWORD: ${ALLOYIQ_API_DB_PASSWORD}
+      ALLOYIQ_WORKER_DB_PASSWORD: ${ALLOYIQ_WORKER_DB_PASSWORD}
+      ALLOYIQ_MIGRATOR_DB_PASSWORD: ${ALLOYIQ_MIGRATOR_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d alloyiq"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # Cache and rate limits only; nothing durable lives here (ADR-005).
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:8025:8025"   # web UI; SMTP 1025 stays on the compose network
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  caddy_data:
+  web_node_modules:
+  web_next:

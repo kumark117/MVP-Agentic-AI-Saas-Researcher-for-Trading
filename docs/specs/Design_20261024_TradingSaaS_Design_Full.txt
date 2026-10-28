@@ -1,0 +1,523 @@
+
+AI Agentic Saas Researcher for Trading
+Software design specification version 2
+Prepared for Kumar Krishnamoorthy • 24 October 2026 • Document version 2 for product and API release 1
+This document defines how the product will satisfy the separate Requirements Specification version 2. It contains architecture, OO Python responsibilities, persisted state, execution and recovery rules, safety boundaries, cost accounting, frontend interaction and version 1 REST/SSE contracts. Customer payments are simulated; model usage, provider expenses and latency remain real. This is a design to implement and verify, not an assertion of deployed readiness.
+Contents
+1 Design authority decisions and terminology
+2 Frontend composition and component boundaries
+3 Identity authorization and sessions
+4 Instrument catalogue and provider adapters
+5 OOAD modules classes and reusable functions
+6 Durable graph MCP execution and scheduling
+7 Validation trust boundaries and unsafe handoffs
+8 Run state cancellation and queued messages
+9 Demo accounting and actual provider costs
+10 Observability metrics and report calculations
+11 PostgreSQL model isolation and retention
+12 REST protocol conventions
+13 Identity catalogue and session route registry
+14 Research history and conversation route registry
+15 Billing reports and administrative routes
+16 SSE and external service interfaces
+17 Reliability deployment and operations
+18 Evaluation tests and release evidence
+19 Detailed boundary schemas and entity relationships
+20 Dummy payment contract and safeguards
+21 Requirement traceability delivery and unresolved decisions
+22 Source baseline and integration references
+
+1 Design authority decisions and terminology
+The companion requirements document defines product obligations R001–R074. This design selects an implementation that satisfies them. Functional behavior is specified there; it is referenced here where necessary to make an interface or state transition unambiguous. The design also follows the user's mandated Next.js, Python OO reuse, PostgreSQL, LangSmith and LangChain/LangGraph constraints.
+Detailed controls D025 and similar retain the numeric identifiers of relevant material in the earlier combined specification, now prefixed D to avoid confusing them with the new R identifiers. D identifiers are not a second product requirements register. New implementation decisions below clarify atomicity, recovery, isolation and test responsibilities. Section 21 maps the new R groups to implementation sections.
+The product owner controls required behavior and scope. The technical owner controls architecture and compatible internal changes. A contract-breaking change requires version review and consumer migration. Numerical limits are proposed initial configuration values; proof comes from testing and operations. Payments cannot become live merely by changing an environment flag: real commerce is a separately approved release.
+Decision
+Selected implementation and rationale
+Application structure
+Modular monolith with independent API and worker processes; avoids premature distributed transactions while allowing execution capacity to scale
+Workflow
+LangGraph checkpoints plus explicit durable jobs; graph persistence alone is not a job scheduler or exactly-once payment mechanism
+Shared truth
+PostgreSQL for accounts, jobs, demo accounting, events and audit; Redis is a replaceable optimization
+Transport
+One browser HTTPS origin, FastAPI REST commands/reads, replayable SSE notifications; private MCP for service tools
+Provider integration
+Dependency-injected model, market, news and payment adapters; only DummyPaymentProvider enabled for customer payments
+Isolation
+Account context in service policy and database row policies; each run gets isolated graph state and ownership
+Costs
+Actual usage and provider expenses isolated from non-redeemable demo journals; independent real spend reservation
+Observability
+LangSmith for AI traces, OpenTelemetry for service spans, durable local audit and usage for correctness
+
+2 Frontend composition and component boundaries
+Use a Next.js App Router TypeScript application with feature areas auth, research, history, reports, account and admin. Server-render non-streaming shells where suitable. Client components manage ResearchForm, RunStatus, ActivityPanel, EvidencePanel, ReportPanel and UsagePanel. A typed API client and one stream controller per mounted scope own network behavior; components must not independently retry chargeable commands.
+The browser reaches /api/v1 through the same-origin gateway; FastAPI owns business semantics. Persisted snapshots are authoritative. Query invalidation follows run.updated, balance.updated and subscription.updated. Event payloads update transient displays, then refresh relevant snapshots after terminal or settlement changes. Cancel and checkout buttons show pending state but server idempotency remains the duplicate-action defense.
+ResearchForm receives catalogue IDs rather than provider symbols. Dependent selectors resolve an instrument snapshot. The estimate captures normalized request fields and permitted model policy; submission sends estimate_id and max_charge only. The UI renders every demo monetary value with a simulation label and separates measured usage, calculated/reconciled provider cost and hypothetical charge. No hidden model reasoning is requested for a log panel.
+Design control D018. Build a responsive Next.js App Router interface with TypeScript. Screens shall include authentication, dashboard and research, run detail, history, usage and reports, account balance and billing, profile and security, and privileged administration. Browser traffic uses one HTTPS origin for /api/v1 and SSE. FastAPI serves those paths behind the gateway; avoid a second inconsistent Next.js business API.
+Design control D019. The research form shall show metal, exchange, exact instrument and contract, horizon, model profile, optional bounded research question, estimated charge range, maximum authorized charge, data freshness, balance, and plan limits. Dependent selectors prevent invalid combinations. Model choice shall disclose provider, model ID or version, price schedule, context limits, and fallback policy.
+Design control D020. The live screen shall contain a state and timing header, a progress and activity panel, evidence panel, report summary, and usage panel. Activity events show agent, approved action summary, tool name, sanitized argument summary, observation summary, elapsed time, retry, and validation status. Do not request, persist, or expose private chain-of-thought or raw hidden reasoning. ReAct visibility means observable action and observation steps plus brief explanations supported by evidence.
+Design control D021. Summary shall show signal, research horizon, evidence citations, disagreements, assumptions, risks, freshness, and confidence label. Confidence is a model assessment unless separately calibrated against a documented dataset; do not present 0.78 as a proven 78 percent success probability. All reports show creation time and the research-only disclosure.
+Design control D022. The account screen shall show demo posted, reserved, available and pending amounts separately. Display simulated plan renewal, subscription state, demo transaction history, sample receipts, simulated refunds, rate schedules and token breakdown. Show actual provider cost and hypothetical customer charge as separate labelled fields. Sample receipts must say Simulation — not a tax invoice. Customer money collected is always zero.
+Design control D023. About shall open /about in a new tab using target=_blank and rel=noopener noreferrer. It describes workflow, data sources, supported coverage, delays, model use, billing, cancellations, security limitations, evaluation, privacy, and service boundaries in plain language. It must not expose credentials, private architecture addresses, or internal traces.
+Design control D024. Meet WCAG 2.2 AA as a release target. Support keyboard navigation, labelled controls, focus visibility, reduced motion, readable mobile panels, explicit reconnect state, and screen-reader status summaries without announcing every token. Allow pausing autoscroll and downloading sanitized activity records. Paid actions must prevent accidental double submission while remaining idempotent server-side.
+3 Identity authorization and sessions
+AuthService owns registration, verification, recovery, identity linking and session rotation. SessionRepository stores hashed opaque tokens and expiry; AuthIdentityRepository stores issuer plus subject. Password hashing is Argon2id with calibrated parameters. Browser cookies are host-only, Secure, HttpOnly and SameSite=Lax. CSRF bootstrap supports unauthenticated login forms and authenticated mutations; Origin checks complement the token.
+AccountContext contains user_id, account_id, membership_role, session_id and authentication freshness. It is created by trusted middleware and never copied from a user-selected account ID. Request authorization precedes repository access. Session IDs from one device are independent; revocation invalidates matching access and is periodically checked by active streams. The public auth route registry appears in section 13 and the MFA details in section 19.
+Design control D012. Support email and password registration, verification, login, forgot-password, reset-password, optional Google OpenID Connect login, logout, session inventory, individual session revocation, and logout-all. Google login can be disabled without affecting password login. Google-only users can add a password through a verified recovery flow.
+Design control D013. Store passwords using a vetted Argon2id implementation and calibrated parameters. Store verification, reset, and session token hashes, never plaintext credentials. Recovery and verification tokens are single use, expire after 30 minutes, and are invalidated after use. Respond generically to recovery requests to resist account enumeration. Password reset revokes existing sessions.
+Design control D014. Google authorization shall use server-side authorization code flow, state, nonce, exact redirect allowlists, and PKCE where supported by the selected client. Validate issuer, audience, signature, expiry, nonce, and verified email claim. Identify Google identities by issuer plus subject. Matching email alone must not silently link accounts: linking requires an existing authenticated session and fresh Google authentication, or an equivalent verified recovery process.
+Design control D015. Use opaque server-backed session cookies with Secure, HttpOnly, SameSite=Lax and path /. Use a host-only __Host- prefixed cookie. No session tokens in URLs or localStorage. Rotate session IDs after login and privilege changes. Default idle expiry is 24 hours and absolute expiry is 30 days; privileged sessions expire after 8 hours and require MFA. Show approximate device, creation time, and last activity without claiming a hardware fingerprint is authoritative.
+Design control D016. Require CSRF tokens and Origin checks on state-changing browser requests. Bootstrap the token through GET /api/v1/auth/csrf and send X-CSRF-Token. Google callback uses state and nonce instead of CSRF header. Dummy payment events use trusted internal delivery; public payment webhooks are disabled. Rate-limit authentication, verification, password reset, and checkout by IP and account; introduce adaptive challenges without blocking normal multi-device use.
+Design control D017. Authorization shall run on every resource request and SSE connection. Derive account_id from the session, never from a caller-supplied account ID. Return 404 for another user's opaque resource IDs. Revoked or expired sessions must terminate active streams within 15 seconds. Administrator MFA, audited privileged access, account suspension, and user-visible security notifications are mandatory.
+4 Instrument catalogue and provider adapters
+InstrumentRepository resolves catalogue IDs to exact venue/type/expiry/unit/currency metadata and licensed provider mappings. MarketDataProvider exposes quote and history methods returning normalized timestamped values. NewsProvider exposes bounded search. Provider-specific raw fields are normalized once at the adapter boundary and validated again as domain evidence. Neither an LLM-generated symbol nor an arbitrary browser URL can select a new provider destination.
+Cache keys include instrument identity, contract expiry, provider/version, frequency, entitlement and freshness bucket. Quotes cannot be reused beyond their policy even if a previous graph run is replayed. FX conversion produces a derived observation linked to original and FX evidence. A reference series has a distinct instrument identity and cannot masquerade as an exchange contract.
+Design control D004. Initial catalogue candidates are gold, silver, copper, zinc, and uranium, with MCX, COMEX, and LME as candidate venues. Enable only individually verified instrument and vendor combinations. Uranium or another metal may have no valid combination for a selected venue. Never infer that every metal trades on every venue. Display unavailable combinations with a reason.
+Design control D005. Each instrument shall specify canonical ID, provider symbol, exchange, spot or futures type, contract expiry, quote currency, unit, tick information when available, trading calendar, timezone, and vendor entitlement. A spot or macroeconomic commodity series must not be labelled an exchange futures quote. Currency conversion must show source and timestamp and must not be substituted for a genuine local exchange quotation.
+Design control D006. Every displayed observation shall show source, source observation time, fetched time, delay classification, market-open status, and data-quality state. Historical demonstrations and synthetic fixtures shall be explicitly marked and prohibited from being presented as live production evidence. Market-data redistribution rights and provider coverage must be verified before enabling an instrument for users.
+5 OOAD modules classes and reusable functions
+Design control D025. Use a modular monolith initially: Next.js frontend; FastAPI API processes; separate Python worker processes; a private MCP service; managed PostgreSQL; Redis for distributed quotas, short-lived cache and stream notifications; object storage for encrypted large artifacts; LangSmith for AI traces and evaluations; and OpenTelemetry plus metrics and logs for infrastructure. API and workers scale independently. PostgreSQL is authoritative for jobs, balances, durable events, and audit records.
+Design control D026. Use a PostgreSQL durable jobs table and transactional outbox for queueing version 1. Workers claim runnable jobs with short transactions and SKIP LOCKED, then use expiring leases and fencing generations. Do not hold database locks while waiting for an LLM. A dispatcher publishes outbox notifications; periodic polling catches missed notifications. Redis Pub/Sub is an optimization and cannot be the sole job store or SSE history.
+Design control D027. Use domain objects User, Account, Session, ResearchRun, Instrument, EvidenceBundle, Wallet, Reservation, LedgerTransaction, UsageRecord, and EvaluationResult. Application services coordinate use cases; domain objects enforce invariants; repositories own persistence; adapters isolate external providers. Use immutable Pydantic boundary schemas and explicit typed graph state. Avoid one class per helper or deep inheritance trees.
+Design control D028. Required reusable interfaces are MarketDataProvider, NewsProvider, LLMGateway, MCPToolGateway, PaymentProvider, RunRepository, WalletRepository, EventRepository, and TraceSink. Services are AuthService, ResearchService, WorkflowRunner, EvidenceValidator, PolicyEngine, BudgetService, BillingService, ReportService, and ReconciliationService. Inject interfaces through constructors. PriceAgent, NewsAgent, TechnicalAgent, and SignalAgent compose these services.
+Design control D029. Pure Python functions shall implement indicators, normalization, currency and unit conversion, freshness checks, cost arithmetic, and report statistics. Use Decimal for money, timezone-aware datetimes, and explicit units. Technical indicators must be deterministic calculations over validated bars; the LLM explains results rather than inventing RSI or MACD numbers.
+Design control D030. Suggested package boundaries are domain, application, api, workflows, agents, tools, adapters, repositories, billing, observability, evaluations, security, and tests. No API route directly mutates ledger rows or calls models. No model agent directly performs arbitrary SQL or payment operations. Async clients are reused with bounded connection pools; blocking numerical work is isolated where necessary.
+Service method responsibilities
+ResearchService.estimate creates an immutable request snapshot and price policy; admit creates the run, hold and job intent; cancel performs a guarded state transition. WorkflowRunner claims a generation lease, resumes graph state and executes bounded nodes. EvidenceValidator returns typed verdicts, not a boolean that discards reasons. PolicyEngine authorizes tools and handoffs independently of model text. LLMGateway accepts only approved model profiles, call budgets and correlation context.
+BudgetService reserves real platform spend separately from WalletService's demo-credit reservation. BillingService calculates usage classifications and creates balanced demo journals. ReconciliationService resolves unknown usage and verifies projections. ReportService computes read-only aggregates with explicit populations. No domain service imports FastAPI request objects; HTTP handlers translate boundary models into use-case calls.
+Pure functions implement indicator calculations, source normalization, schema-independent semantic rules, exact pricing and percentile statistics. Domain protocols use dependency injection and immutable request context. Composition is preferred to a hierarchy of specialized agents. SQLAlchemy async repositories and Alembic migrations are proposed persistence implementation choices; pin and verify compatible versions before implementation.
+6 Durable graph MCP execution and scheduling
+Design control D031. Use LangGraph for the stateful workflow and checkpoint persistence, with LangChain model and tool abstractions behind LLMGateway. Pin compatible dependency versions and record them on every run. Each run has its own graph thread and durable PostgreSQL checkpointer scope. Chat context, when used, is explicitly selected and bounded; one user's graph state must never be reused for another user.
+Design control D032. The graph is request validation, policy check, budget admission, parallel Price News Technical branches, evidence merge, handoff validation, Signal synthesis, final validation, report persistence, usage settlement, and terminal event. Each branch and node records its own status and outputs. Checkpoints store only permitted state; large source artifacts are referenced by hash and object key.
+Design control D033. Model tool results normally return to the requesting branch model for bounded tool-use continuation. The Signal agent receives a normalized EvidenceBundle produced by validated branch outputs, not unfiltered raw transcripts. All model and tool calls include run_id, span_id, immutable request context, and per-call budget. The product shall not rely on a model obeying textual tool restrictions.
+Design control D034. Each branch may make at most 6 model calls and 10 tool calls; the whole run is limited to 24 model calls, 30 tool calls, and 120 seconds active execution by default. Stop before any call that would exceed reserved spend or limits. These limits are server policy, versioned and shown in the estimate. One structured-output repair attempt is allowed within the same limits.
+Design control D035. MCP tools shall be read-only market and news capabilities: get_quote, get_history, get_technical_indicators, get_fx_rate, and search_news. Signal persistence belongs to the application service, not an LLM-controlled write tool. Tool definitions have versioned input and output schemas, authorization scopes, maximum payload size, deadlines, and explicit error codes.
+Design control D036. Production MCP uses private Streamable HTTP at an internal HTTPS /mcp endpoint with service authentication, audience validation and per-tool authorization; the browser never connects to MCP. Local development may use stdio. MCP authorization and protocol negotiation follow the pinned published specification; internal HTTPS transport is separate from browser SSE. Do not pass user session cookies or third-party access tokens through MCP as generic bearer credentials.
+Design control D037. Tool response envelope shall include schema_version, tool_call_id, status, data, source, observed_at, fetched_at, freshness_state, unit, currency, instrument_id, provenance_hash, and warnings. Failed responses use typed error fields and no invented data. JSON is validated before becoming graph state. Tool-schema changes require compatibility tests and controlled rollout.
+Design control D038. Successful checkpointing does not guarantee that a paid external call executes exactly once. Before dispatch, persist a call intent and deduplication key; after completion, persist provider request ID, usage and result before advancing. Recover completed outputs from storage. Calls left in ambiguous state must be reconciled where possible; do not blindly reissue a potentially chargeable request on worker restart.
+Admission transaction and dispatch
+Within one PostgreSQL transaction, claim the account/method/path idempotency key, verify its payload hash, lock the wallet and relevant real-budget rows in a consistent order, check limits, reserve demo credit and real spend, create the run and message linkage, create a durable job and outbox event, and persist the response. Commit before returning 202. A conflict or insufficient budget rolls back all those writes. If the HTTP response is lost, the original key returns the committed run instead of admitting a second one.
+The worker claims a job using a short SKIP LOCKED transaction, increments its fencing generation and starts heartbeats. It does not keep a transaction open while calling providers. Every node write checks the current generation and nonterminal state. The outbox dispatcher may publish notifications repeatedly; the durable job and event IDs are the deduplication anchors. A polling sweep recovers work when Redis notifications are lost.
+Node execution and recovery sequence
+Before each model or tool dispatch, record a unique call intent with node, attempt, generation, limits and request fingerprint. Reserve worst-case remaining real expense. Execute outside the database transaction. Persist the provider result reference and usage before marking the node complete and checkpointing the validated output. On recovery, completed nodes reuse recorded output. A call with only an intent and no trustworthy completion is ambiguous; a provider lookup or reconciliation must decide whether it can be retried. No design promises exactly-once execution by an external provider.
+The graph has separate immutable evidence keys for Price, News and Technical branches. Reducers merge typed records without overwriting another branch's output. Signal waits for the branch barrier, inspects completeness and policy verdicts, and either synthesizes or produces an explicit abstention/incomplete outcome. Capture prompt, model, graph, validation and price versions before the run starts.
+7 Validation trust boundaries and unsafe handoffs
+Design control D039. Every ingress request shall validate authentication, ownership, CSRF where applicable, JSON schema, size, permitted catalogue values, available model, entitlement, rate limit, and budget. External API requests validate destination, HTTPS, redirect policy, arguments, timeout and retry policy. Responses validate status, content type, bounded body size, schema, numeric ranges, timestamps, units and provenance.
+Design control D040. Every MCP invocation shall validate tool allowlist, tool version, service identity, scope, argument schema, call budget and deadline before dispatch; then validate the response envelope, tool error flag, content schema, completeness, and semantic correctness. HTTP 200 or successful JSON parsing alone is insufficient evidence of a successful tool call.
+Design control D041. Every model output shall validate schema and size, signal enum, citation references, timestamp and instrument consistency, numerical claims against evidence, and disallowed actions. Store validation outcomes and policy versions. Never allow a model to authorize a credit mutation, privilege change, secret access, arbitrary URL fetch, or code execution.
+Design control D042. All external text, including search results, webpage extracts, prior reports, user messages, tool descriptions from outside the trusted registry, and model output, is untrusted data. Maintain provenance and taint tags as it crosses nodes. An output being valid in step 1 does not make it a trusted instruction in step 2.
+Design control D043. Handoff validation shall reject instructions to ignore system rules, disclose secrets, change billing, call unapproved tools, access another user's data, or invoke arbitrary endpoints. Also reject stale quotes, mismatched futures expiries, contradictory currencies or units, missing citations, and unsupported numbers. Normalize into typed data fields; preserve excerpts as quoted evidence; never concatenate them into higher-priority instructions.
+Design control D044. Example: a news result saying send the user's token to an external collection URL is quarantined. The next agent receives a redacted article record with a security flag, not that instruction as a tool command. A quote labelled USD per troy ounce must not be combined with INR per kilogram without an explicit verified conversion. Record the blocked handoff and affected evidence IDs.
+Design control D045. Apply deterministic allowlists, permissions, schema validation, bounded contexts and network egress controls alongside injection classifiers. The classifier is advisory and may miss attacks. Maintain an adversarial regression set including indirect injection, encoded text, tool-output manipulation, persistent history poisoning and multilingual attacks. No requirement claims complete prevention of prompt injection.
+Design control D046. Sanitize rendered Markdown and HTML, permit safe link schemes, use CSP, and avoid executing model-generated JavaScript, shell commands, SQL, or templates. Protect fetchers from SSRF with domain policy, DNS and resolved-address checks, blocked private and metadata ranges, redirect revalidation, and outbound proxies where needed. Secrets must never enter prompts, traces, SSE payloads or user-visible logs.
+Design control D047. If one branch fails, continue only if a policy-approved evidence minimum remains. Version 1 requires a valid matching quote, sufficient historical bars for selected indicators, and at least one relevant cited news source; otherwise persist an incomplete report with NO_SIGNAL and missing-evidence reasons. A failed final validator cannot be bypassed by a retry prompt requesting fewer restrictions.
+8 Run state cancellation and queued messages
+Design control D048. Public run states are queued, running, cancel_requested, succeeded, incomplete, failed, cancelled, and timed_out. succeeded, incomplete, failed, cancelled, and timed_out are terminal. Internal recovering jobs remain publicly running with a recovery event. Billing has a separate state reserved, pending_settlement, settled, released, or disputed. A completed report may precede final financial reconciliation.
+Design control D049. A run starts queued and may transition to running or cancel_requested. running may transition to cancel_requested or a terminal state. cancel_requested becomes cancelled once work is stopped or accounted for. A compare-and-swap transition determines races: if success was committed first, cancellation returns the existing succeeded run; if cancellation was committed first, subsequent worker completion cannot overwrite it with success.
+Design control D050. Cancellation shall persist the request, notify the worker, cancel sibling asyncio tasks, close provider streams where supported, and prevent new calls. Disconnecting SSE is not cancellation. Cancellation acknowledgement does not imply a provider stopped computation or charged nothing. Bill confirmed usage already incurred under the published policy; release the unused reservation after reconciliation. Measure request-to-stop latency separately from provider settlement time.
+Design control D051. Defaults are 2 active runs, 5 queued runs and 3 SSE streams per user; 100 executing runs system-wide; and 10 workers with bounded async concurrency for initial capacity testing. Configure limits by plan and provider quota. Reject admission above limits with 429 and Retry-After. Use weighted fair scheduling so one heavy user cannot starve others. Queue expiry is 5 minutes; expired jobs time out without model charges.
+Design control D052. Research questions and follow-ups shall be persisted as conversation messages. Version 1 accepts a follow-up only after the prior run is terminal and starts a new separately estimated run. Messages are immutable after submission, limited to 4,000 characters, and associated with a user and conversation. Do not silently inject new messages into an executing graph. Message history retrieval is paginated and ownership checked.
+Design control D053. Worker heartbeats occur every 10 seconds with 30-second leases; expired leases trigger a fenced recovery claim. Only the current generation may commit node completion or terminal status. Exhausted retries go to a dead-letter record and an operator-visible incident queue. Recover idempotent steps from checkpoints; pause ambiguous external calls for reconciliation rather than repeatedly charging.
+Authoritative transition implementation
+Use guarded UPDATE operations with expected status and fencing generation. queued may become running or cancel_requested; queued may become timed_out on queue expiry. running may become cancel_requested or a terminal result. cancel_requested resolves to cancelled; execution cannot later overwrite it with succeeded. If terminal success committed first, cancellation returns that snapshot. Budget exhaustion yields an explicit incomplete or failed outcome based on whether a validated partial report exists.
+Recovery keeps the public state running while a durable recovery event explains delay. The worker observes a persistent cancel flag before every call and at checkpoints, cancels local sibling tasks, closes supported streams and joins tasks with a bounded grace period. A worker that cannot be stopped loses authority through fencing. Continue recording late provider usage without resurrecting a run or altering its committed terminal outcome.
+9 Demo accounting and actual provider costs
+Design control D054. Implement DummyPaymentProvider as the only enabled payment adapter in this release. It shall support deterministic simulated checkout success, failure, pending, expiry, duplicate notification and refund outcomes without calling a real payment gateway. Demo credits have no cash value and cannot be withdrawn. Retain PaymentProvider as an extension interface; Stripe, Razorpay, merchant onboarding, live credentials and real payment processing are future scope requiring a separately approved specification change.
+Design control D055. Demo account currency is INR and demo accounts cannot mix currencies. Actual provider costs remain in their original currency and may additionally be displayed in INR with recorded FX source, timestamp and rate. Market FX and cost-reporting FX are distinct. Hypothetical subscription fees and simulated model usage debits are separate line items. Auto top-up is disabled. Actual money collected and cash revenue remain zero.
+Design control D056. A versioned public rate card shall define provider, exact model, effective interval, input token rate, output token rate, cached-input and cache-write categories where applicable, separately reported reasoning-token treatment, billable tool surcharge if any, markup, FX rule and tax treatment. Avoid double-counting tokens that a provider reports both as total output and a subset. Pin the rate-card version for each authorized run.
+Design control D057. Hypothetical usage charge equals billable token-category quantities multiplied by the versioned customer simulation rates, plus any explicitly configured simulated fee. Show actual measured usage, calculated provider cost, hypothetical customer charge and money collected as distinct values; money collected is always zero. Provider cost calculated from actual tokens and a rate card must be labelled calculated until reconciled to provider billing records. Include retries, judge calls and repairs in platform cost even when excluded from the simulated customer debit. Tax collection and tax invoices are out of scope; any tax illustration must be explicitly marked simulated.
+Design control D058. Store token counts as integers and monetary computation as exact NUMERIC values at micro-INR precision. Round customer postings to paise once per settled run under a documented rounding rule, recording rounding adjustment. Aggregate spend from ledger postings; do not sum independently rounded display rows. Never use binary float for balances or charges.
+Design control D059. An estimate shall include model profile, allowed fallback model list, maximum calls and output tokens, estimated range, hard maximum charge, rate version, expiry and a request fingerprint. It expires after 5 minutes. Starting a run requires an unexpired matching estimate and maximum authorized amount at least equal to the computed worst-case reserve. A changed request requires a new estimate.
+Design control D060. Under a database transaction, lock or atomically update the demo wallet, check available demo credit, create a reservation, run and outbox entry, and enforce a unique idempotency key. available equals demo posted credit less demo debits less active reservations. Admission from two devices must not overspend the same demo balance. Each external call must also pass an independent real platform-spend budget enforced server-side; adding demo credits cannot raise this real budget. Stop calls that cannot fit the remaining run and platform limits. The platform pays actual provider costs; simulated debits never collect real money.
+Design control D061. Persist every provider call and its observed usage, attempt, model, request ID, price version and billing classification. Actual billable tokens come from provider usage responses or reconciled provider records. If usage is unavailable after an interrupted stream, mark it unknown and pending; do not label a tokenizer estimate as actual. Release clearly unused credit immediately and retain only a defensible bounded pending reserve for up to 24 hours. If reconciliation remains impossible after that window, release the reserve and let the platform absorb any later unmatched cost.
+Design control D062. Debit demo credits for the hypothetical cost of successful primary calls, including confirmed work before cancellation or failure under the displayed simulation policy. Validation-failed and recovery calls remain visible as platform costs without a demo customer debit by default. Cache hits have zero LLM token cost when no model call occurs. Internal replay must not duplicate a demo debit or hide real duplicated provider expense. Customer payable and money collected remain zero.
+Design control D063. Use an append-only balanced demo ledger with journal headers and at least two postings per transaction. Events include simulated top-up, run debit, subscription fee, refund, adjustment and reversal. Every wallet, reservation, ledger, checkout, subscription and sample receipt record has payment_mode=simulated. Demo journals are isolated from actual provider expense records and must never be aggregated as real revenue or cash. Constraints enforce balanced postings, unique business event IDs and no unauthorized negative demo balance. Corrections use reversals rather than edits.
+Design control D064. DummyPaymentProvider shall persist simulated notifications with unique event and business IDs, process them asynchronously, deduplicate repeats and handle out-of-order delivery. Notification generation is a trusted server-side operation; a browser cannot post arbitrary successful events. Public payment webhooks are disabled. Simulation controls are authenticated, CSRF protected, ownership checked and rate limited. Test controls cannot collect money or activate a real provider. Reconcile demo events to demo ledger postings and actual LLM usage to provider records separately.
+Design control D065. Users may select a simulated subscription, use a local demo billing portal, cancel at a simulated period end and inspect demo entitlement dates. Lifecycle events are generated by the dummy adapter and applied idempotently. No recurring customer debit is sent to a payment network. Demo top-ups are bounded by per-user daily limits and do not bypass actual platform usage quotas. Users receive no claim that an external subscription has been purchased.
+Separate real spend from demo credit
+Maintain real_budget_accounts and real_spend_reservations keyed by owner scope and UTC budget period. A provider call must fit the run reservation and the account-day and platform-day allowances. Use consistent lock ordering or a serializable retry strategy for concurrent reservations. Reconcile worst-case reserves against measured usage and release the unused portion. Unknown usage retains a bounded conservative spend allowance, subject to explicit operational policy; it does not become zero actual cost when a demo hold expires.
+The demo ledger and provider expense register are different domains. A zero customer collection does not make provider expense zero. Store expense in original currency, with optional separately derived INR value and recorded FX evidence. Persist whether the amount is calculated from provider tokens and a rate card, reconciled with a provider invoice, estimated, or still unknown. Public responses exclude internal margins where not relevant but always provide the member's run expense and its provenance.
+Ledger journal creation runs inside an application-controlled transaction. Monetary posting rows are immutable; a deferred constraint trigger or equivalent approved transaction validator checks that the journal balances by currency before commit. Unique business IDs prevent duplicate journals. Demo holds are not posted cash and are not included in revenue. All repeated dummy events produce at most one effective posting set.
+10 Observability metrics and report calculations
+Design control D066. Instrument ingress, queue wait, worker execution, graph nodes, model calls, MCP tools, vendor requests, validation, persistence, billing and SSE delivery. Correlation fields are request_id, trace_id, run_id, account pseudonym, session reference, node_id, tool_call_id, provider_request_id, attempt and deployment version. Use W3C trace context internally and validate any public correlation header.
+Design control D067. LangSmith shall receive a trace tree for every production run with redacted inputs and outputs, model metadata, token usage, tool observations, evaluation scores and timing. Application and infrastructure spans use OpenTelemetry. LangSmith is diagnostic, not the billing system or primary run store. Buffer exports durably with bounded retries; an exporter outage must not stop or lose paid research. Record observability gaps explicitly and alert on backlog age.
+Design control D068. Structured logs shall contain severity, timestamp, correlation fields, event code and sanitized message. Public activity events, operator logs, financial audit records and restricted traces have distinct access policies. Never stream another account's logs. Keep 100 percent of financial, security, lifecycle and usage records; sampling of verbose infrastructure diagnostics must be documented. Users access sanitized run detail, not shared unrestricted LangSmith project links.
+Design control D069. Persist submitted_at, started_at, report_ready_at, cancel_requested_at and terminal_at in UTC. Compute durations with monotonic clocks within a process and recorded spans across processes; synchronize clocks and avoid deriving negative durations. end_to_end_ms is terminal_at minus submitted_at, execution_ms is terminal_at minus started_at, and queue_ms is started_at minus submitted_at. Record time_to_first_activity_ms and time_to_first_model_token_ms separately.
+Design control D070. Report per-user and platform totals: total submitted, queued, running, each terminal state, successful, incomplete, failed, cancelled, timed out, pending billing, total tokens by category, billable tokens, actual provider cost, customer charge, cache hits, retries, tool errors, validation failures, and security blocks. Latest run means the most recently submitted run, with its current state, final duration if available, model usage and settlement state.
+Design control D071. Default latency percentiles use succeeded runs whose terminal_at falls in the requested half-open interval [from,to), filtered by account, instrument and model profile where requested. Also return counts and separately labelled all-terminal latency distributions, queue latency and provider-call latency. Never mix cancelled short runs into the success percentile without labelling the population. Return p50, p95 and p99 in milliseconds and sample_count; return null for an empty population and a low-sample warning below 100 observations.
+Design control D072. Exact user reports use PostgreSQL percentile_cont over raw durations or a documented equivalent. Platform high-volume histograms may be approximate, with histogram configuration and approximation label. Do not average daily p95 or p99 values to obtain a monthly percentile. Aggregate across raw samples or mergeable distributions. Version 1 maximum synchronous report range is 90 days; larger exports are asynchronous jobs.
+Design control D073. Default success rate is succeeded divided by all executed terminal runs excluding user-cancelled runs; denominator includes incomplete, failed and timed_out. Also show the denominator and a completion breakdown including cancellations and queue expiries. Define separate service availability, provider dependency availability and research quality rates. Do not conflate a reachable API with a correct research result.
+Design control D074. A personal summary covers selected time range, daily trend, model comparison, latest run and cost reconciliation. An administrator summary covers system volume, actual provider spend, simulated charges, zero cash revenue, provider errors, queue depth and age, SLO burn, evaluation trends, security incidents and deployment changes. Cache aggregate responses for at most 30 seconds and return data_as_of. CSV exports must prevent formula injection and enforce account scope.
+11 PostgreSQL model isolation and retention
+All application tables use UUID primary keys, UTC timestamps, foreign keys, explicit retention class and required ownership fields. Accounts are the isolation boundary even for one-person accounts. The following inventory states what is stored, rather than prescribing every migration column.
+Tables
+Required records and constraints
+users and auth_identities
+User profile, normalized unique verified email policy, status, password hash when present, identity issuer and subject unique together, consent versions and deletion state
+accounts and account_memberships
+Personal billing account, owner, account currency, status and role membership; version 1 enforces one active personal owner
+sessions and auth_tokens
+Session token hashes, user, created and last activity, idle and absolute expiry, revocation; hashed verification and reset tokens with consumed_at
+security_events and audit_events
+Actor, action, target, request and run correlation, outcome, redacted before and after metadata, privileged access reason and event time
+instruments and provider_mappings
+Metal, venue, contract, unit, currency, calendar, vendor symbols, coverage, freshness limits, entitlement and availability state
+model_profiles and model_prices
+Provider model IDs, pinned settings, approved fallbacks, context and call limits; immutable effective rate versions and FX policy
+plans subscriptions and entitlements
+Versioned demo plan limits, dummy subscription reference, simulated period, payment_mode=simulated, lifecycle state and feature permissions
+payment_customers payments invoices refunds
+Dummy references, simulated amounts, currency and demo lifecycle states, payment_mode=simulated, sample receipt references; no payment instrument data
+webhook_events
+Dummy event ID unique, payment_mode=simulated, event type, received time, minimized payload, trusted origin, processing status and retry count
+wallets reservations and reservation_events
+Account currency, balance projection, run hold, pending and released amounts, expiry and immutable hold transition history
+ledger_transactions and ledger_postings
+Unique business event, account, currency, balanced debit and credit postings, precise amount, rate references, reversal links and operator reason
+estimates and idempotency_records
+Request fingerprint, policy and pricing versions, charge ceiling, expiry; account scoped key, method, path, body hash and saved response
+conversations messages and feedback
+User interaction history, role, sanitized text or encrypted object reference, parent conversation, associated run, feedback score and moderation state
+research_runs and run_nodes
+Submitted parameters, owner, immutable versions, public status, timing, cancellation state, evidence quality, billing state and node attempts
+jobs job_attempts and outbox
+Durable execution intent, scheduling priority, lease and fencing generation, attempt history, dead-letter reason and event publication state
+graph checkpoint tables
+Durable LangGraph state and writes scoped to graph thread and account, versioned and encrypted where appropriate
+llm_calls and usage_records
+Call intent and attempt IDs, model and provider request IDs, token category counts, actual or unknown usage state, cost, charge classification and reconciliation status
+tool_calls and validation_results
+MCP and downstream call metadata, arguments hash, sanitized results or artifact references, schema versions, checks, verdicts, timing and policy reason
+evidence_items reports and report_citations
+Instrument and source metadata, trust and freshness flags, content hashes, final structured report, cited evidence IDs and artifact keys
+run_events and account_events
+Replayable sanitized SSE envelopes, account or run scope, ordered sequence, event type, payload, schema version and expiry
+evaluation_runs and evaluation_scores
+Dataset and evaluator version, model and prompt version, checks and scores, regression comparison and reviewer verdict
+report_rollups and export_jobs
+Daily counters and mergeable latency distributions, aggregation version, generated export metadata and owner scoped download expiry
+provider_health and reconciliation_jobs
+Dependency status, circuit-breaker evidence, usage and payment mismatch records, retry and resolution state
+
+Design control D075. Add indexes for account and submission time, run and sequence, provider and request ID, unsettled usage, job state and schedule time, event expiry, and unique business events. Partition high-volume events and usage by time when justified by measured scale. Use JSONB for validated evolving payloads, not as a substitute for typed money, identity, status and ownership columns.
+Design control D076. Enforce account scoping in service queries and PostgreSQL row-level security on private data. The API role is not a superuser, table owner or BYPASSRLS role; use FORCE ROW LEVEL SECURITY where needed. Set account context transaction-locally through pooled connections and clear it reliably. Privileged workers use narrowly controlled scoped operations; migrations use a separate role. Test isolation against malicious IDs and stale pool context.
+Design control D077. Large encrypted raw source snapshots and report files reside in object storage, with hashes, ownership and object references in PostgreSQL. Secrets reside in a secret manager; no LLM API keys in application tables; live payment credentials are not configured. Full text is stored only if provider licenses permit. Redis caches, LangSmith traces and metrics stores supplement rather than replace the PostgreSQL audit trail.
+Design control D078. Initial retention policy is 30 days replayable SSE; 90 days detailed sanitized activity and restricted traces; 12 months run reports and interaction history; and 12 months security audit online. Backups expire after 35 days. Demo payment records are retained for 12 months as product data and deleted with eligible account content. Actual provider expense records use the platform accounting retention policy; a proposed 7-year default requires jurisdiction-specific review and does not turn demo receipts into financial invoices. Legal holds override deletion only for their scoped records.
+Design control D079. Account deletion revokes sessions, stops future simulated subscription events and queued work, deletes eligible content within 30 days and propagates deletion to traces and artifacts. Demo payment records follow ordinary product-data retention unless a documented security hold applies. Actual provider expense and usage records retain only necessary pseudonymized references under the applicable retention policy. Restore procedures replay deletion tombstones.
+Core keys indexes and migration rules
+All owned tables carry account_id directly or through an ownership-enforced parent relationship. Use composite foreign keys where practical to prevent a child row referencing another account's run. Unique constraints include (issuer,subject), (account_id,operation_key), (run_id,sequence), (provider,provider_request_id) where non-null and semantically unique, and each journal business_event_id. Unknown provider IDs require stable internal call IDs rather than a fabricated provider ID.
+Add real_budget_accounts, real_spend_reservations and expense_reconciliation_items for the independent real-spend control described in section 9. Separate graph checkpoint tables from public conversation storage; graph_thread_id is run-scoped and never caller-selected. Use NUMERIC for costs, integers for token categories, TIMESTAMPTZ for instants, typed status columns and JSONB only for validated evolving payloads. Partial indexes accelerate runnable jobs, active sessions and unsettled usage.
+Use transaction-local account context on pooled connections, FORCE ROW LEVEL SECURITY where needed, separate migration credentials and no API superuser or BYPASSRLS role. Repositories verify ownership even when row policies apply. Migrations follow expand/backfill/contract steps; rollback must not delete new usage or journal records. Rebuildable projections include balances, report rollups and cache, while immutable events and postings remain authoritative.
+12 REST protocol conventions
+Design control D080. Public base is https://app.example.com/api/v1. HTTPS only; JSON UTF-8 except SSE and file responses. UUID IDs, RFC 3339 UTC timestamps, integer token counts, durations in milliseconds, and money objects with currency plus decimal-string amount. Explicit null means unknown or unavailable, not zero. Reject unknown request fields with 422. Responses may add optional fields; clients ignore unknown response fields. Breaking changes require /api/v2.
+Design control D081. All JSON successes return {data,meta}, where meta includes request_id and server_time. Lists put items and next_cursor inside data. Errors use application/problem+json with type, title, status, code, detail, instance, request_id and optional field_errors. No secrets or internal exception text. Dates and filters have published bounds. List limit defaults to 20 and caps at 100; cursor order is stable by timestamp and ID.
+Design control D082. Status semantics are 200 read or completed action, 201 created resource, 202 asynchronous intent, 400 malformed request, 401 missing session, 403 CSRF or prohibited account action, 404 absent or inaccessible resource, 409 state or idempotency conflict, 410 expired estimate or replay range, 422 schema or domain validation, 429 quota, and 503 dependency or admission unavailable. INSUFFICIENT_CREDIT is represented by code INSUFFICIENT_CREDIT with 409, rather than silently granting demo credit. Retry-After is returned for 429 and retryable 503.
+Design control D083. Require Idempotency-Key UUID for run creation, credit checkout, subscription checkout, refunds, and export creation. Scope the key by account plus method and route; store body fingerprint and completed response for at least 7 days. Same key and body returns the same resource and response; same key with changed body returns 409 IDEMPOTENCY_CONFLICT. Run and payment business IDs remain unique beyond key expiry. Cancellation is naturally idempotent. CSRF is mandatory for authenticated browser mutations with no public payment webhook exemption in simulation mode.
+13 Identity catalogue and session route registry
+Paths below are appended to /api/v1. A session is required unless labelled public. Request fields shown are the required fields unless marked optional. Endpoint names, methods and lifecycle semantics are normative.
+Method and path
+Request and response contract
+GET /auth/csrf
+Public; returns csrf_token and sets the preauthentication CSRF context
+POST /auth/register
+Public with CSRF; email, password, display_name, terms_version, privacy_version; 202 with verification_required true and generic message
+POST /auth/verify-email
+Public with CSRF; token; 200 verified true; no automatic privileged session
+POST /auth/resend-verification
+Public with CSRF; email; generic 202 accepted true
+POST /auth/login
+Public with CSRF; email, password; 200 user summary and session expiry; sets session cookie
+POST /auth/forgot-password
+Public with CSRF; email; generic 202 accepted true
+POST /auth/reset-password
+Public with CSRF; token, new_password; 200 reset true and revokes prior sessions
+GET /auth/google/start
+Public; optional return_to restricted to local allowlist; 303 to Google and short-lived state cookie
+GET /auth/google/callback
+Public protocol callback; code and state; validates OIDC then 303 to approved local page and sets session
+POST /auth/google/link
+Authenticated CSRF; creates linking intent; 200 authorization_url; subsequent callback binds only to the initiating session
+POST /auth/logout
+CSRF; 200 revoked true for current session
+POST /auth/logout-all
+CSRF and fresh authentication; 200 revoked_count
+GET /me
+User, account summary, permissions, preferences and server-derived current session ID
+PATCH /me
+Optional display_name, locale, timezone, default_model_profile_id; 200 updated profile; email changes use separate future verified flow
+GET /me/sessions
+Session IDs, sanitized device information, last_seen_at, expires_at and current flag
+DELETE /me/sessions/{session_id}
+CSRF; 200 revoked true; repeated deletion returns the same effective result
+POST /me/deletion-requests
+CSRF and fresh authentication; confirmation true; 202 request_id and scheduled_at
+GET /catalog/instruments
+Optional metal, exchange, available_only; instrument items with coverage and freshness policy
+GET /catalog/models
+Available model profiles with provider IDs, limits, permitted fallback and active price version
+GET /catalog/prices
+Current customer rate cards, currency and effective intervals; authenticated
+GET /catalog/plans
+Public; versioned subscription features and fixed fees; no promise of unlimited usage
+
+Fresh authentication means password reentry or a new validated OIDC authentication within 5 minutes. Version 1 additionally provides POST /auth/reauthenticate with password or validated OIDC reauthentication intent and returns fresh_until. Privileged MFA uses the frozen routes in section 19 and cannot be bypassed in production.
+14 Research history and conversation route registry
+Method and path
+Request and response contract
+POST /research/estimates
+instrument_id, horizon, model_profile_id, optional question and conversation_id; 201 estimate with request_fingerprint, min_charge, estimated_charge, max_charge, limits, price_version, expires_at
+POST /research/runs
+Idempotency key; estimate_id, max_charge money object; 202 run_id, status queued, billing_status reserved, reserved_amount, status_url and events_url
+GET /research/runs
+Optional status, instrument_id, model_profile_id, from, to, cursor, limit; owned run summaries
+GET /research/runs/{run_id}
+Authoritative run snapshot, lifecycle and billing state, timing, progress, authorized cap and versions
+POST /research/runs/{run_id}/cancel
+Optional reason up to 500 characters; 202 if cancellation pending, 200 if already terminal; returns current run state
+GET /research/runs/{run_id}/report
+200 structured final report; 409 REPORT_NOT_READY before report commit; unsuccessful terminal run may return explicit incomplete report
+GET /research/runs/{run_id}/usage
+Itemized actual and unknown usage, attempts, model IDs, price versions, customer charge and settlement state
+GET /research/runs/{run_id}/activity
+Paginated sanitized actions and observations with sequence and validation outcomes
+GET /research/runs/{run_id}/events
+Authenticated SSE with replay; contract in section 16
+POST /research/runs/{run_id}/feedback
+rating positive or negative, optional comment; 201 feedback ID; one editable rating per user and run via PUT on the same path
+POST /conversations
+Optional title; 201 conversation_id
+GET /conversations
+Paginated owned conversations
+GET /conversations/{conversation_id}/messages
+Paginated immutable messages, role, created_at and associated run
+POST /conversations/{conversation_id}/messages
+content, client_message_id UUID; 201 message_id; unique client ID deduplicates retries and does not execute research
+
+The estimate captures the complete immutable normalized research request. A question supplied directly to an estimate is persisted as a message only when a run is admitted. If a conversation is supplied, its eligible message cutoff is captured by the estimate; later messages do not modify that run. Supported horizon values are intraday, swing and long_term; their exact duration assumptions are versioned in the catalogue. Instrument metadata determines metal and exchange, so conflicting client strings cannot create a second identity.
+Run creation example request body is {"estimate_id":"UUID","max_charge":{"currency":"INR","amount":"25.00"}}. The supplied maximum may exceed the required reservation, but it does not grant permission beyond the estimate maximum; reserve the estimate maximum and reject a supplied cap lower than it. The response data is {"run_id":"UUID","status":"queued","billing_status":"reserved","reserved_amount":{"currency":"INR","amount":"25.00"},"status_url":"/api/v1/research/runs/UUID","events_url":"/api/v1/research/runs/UUID/events"}. The illustrative amount is not a product price.
+Final report fields are report_id, run_id, instrument snapshot, horizon, signal, confidence {score,label,calibration_status}, summary, supporting_evidence, opposing_evidence, citations, data_as_of, freshness_state, limitations, validation_summary and created_at. Citation records contain evidence_id, source URL where permitted, source title, observed_at and content hash. Signal and numeric confidence are null when unsupported, except NO_SIGNAL which explicitly identifies an abstention.
+15 Billing reports and administrative routes
+Method and path
+Request and response contract
+GET /account/balance
+posted_credit, posted_debit, reserved, pending_settlement, available and currency; all money objects
+GET /account/ledger
+Optional from, to, event_type, cursor and limit; immutable customer ledger view with run or payment reference
+POST /billing/credit-checkouts
+Idempotency key; amount money object, approved return_path; 201 checkout_id, hosted_url pointing to local demo checkout, expires_at and payment_mode simulated; bounded demo amount
+GET /billing/checkouts/{checkout_id}
+created, pending, paid, failed or expired as simulated lifecycle states; payment_mode simulated, money_collected zero and authoritative demo credit state
+POST /billing/subscription-checkouts
+Idempotency key; plan_id, approved return_path; 201 local simulated checkout information and payment_mode simulated
+GET /billing/subscription
+Demo plan, entitlement state, simulated period and cancel_at_period_end; payment_mode simulated
+POST /billing/subscription/cancel
+cancel_at_period_end true; idempotent 200 current subscription state
+POST /billing/portal-sessions
+CSRF; approved return_path; 201 short-lived same-origin demo portal URL; no external provider session
+GET /billing/invoices
+Paginated sample receipts with simulated amounts and sample=true; explicitly not tax invoices
+POST /billing/refund-requests
+Idempotency key; payment_id, amount, reason; 202 demo refund request; reverses only demo credit when confirmed
+POST /webhooks/payments/{provider}
+Reserved for future live integration; always 404 in this release and never accepts browser or provider payment events
+GET /reports/summary
+Required from and to UTC, optional instrument_id and model_profile_id; personal totals, latest run, percentile populations and data_as_of
+GET /reports/models
+Required from and to; per-model actual token usage, calculated or reconciled provider costs, hypothetical customer charges, success and latency populations
+POST /exports
+Idempotency key; kind runs, usage or account_data, from, to, format csv or json; 202 export_id and status_url
+GET /exports/{export_id}
+Status and short-lived authorized artifact URL when ready; expired download can be regenerated without a new charge
+GET /events
+Authenticated account SSE for balance, entitlement, run and security changes
+
+Members see actual usage costs alongside separately labelled hypothetical charges and a zero money-collected total. Each member sees actual token counts and their run provider costs; platform summaries remain administrator-only. Refunds reverse demo credits only. No real payment, cash refund or tax invoice is created.
+Method and path
+Required permission and behavior
+GET /admin/reports/summary
+Platform or finance scope; required from and to; aggregate data without raw private prompts
+GET /admin/runs
+Support or platform scope; redacted paginated investigation view with audited account filter
+GET /admin/audit-events
+Security or platform permission; immutable audit search with bounded date interval
+POST /admin/accounts/{account_id}/suspensions
+Platform scope and fresh MFA; reason, until optional; audited suspension and session revocation
+POST /admin/refunds
+Finance scope, fresh MFA and idempotency key; refund_request_id, reason; 202 simulated refund operation only
+POST /admin/reconciliations
+Finance or platform scope; kind payments for demo-ledger reconciliation or usage for actual provider usage, from and to; 202 job reference
+GET /admin/evaluations
+Platform scope; evaluation dataset versions, pass rates and release gate results
+GET /health/live
+Minimal process liveness, no secrets or dependency inventory
+GET /health/ready
+Internal gateway only; readiness for database and durable admission; 503 when unsafe to admit work
+
+Metrics scraping, worker control, schema administration, MCP /mcp and queue recovery are private service interfaces and must not be exposed through the browser gateway. Administrator action bodies reject unknown fields. Price changes are deployed as reviewed immutable configuration migrations in version 1, not an unaudited generic edit API.
+16 SSE and external service interfaces
+Design control D084. GET /api/v1/research/runs/{run_id}/events streams only that run. GET /api/v1/events streams account-level notifications. Both use same-origin cookie authentication and authorize at connection plus periodic session checks. Content-Type is text/event-stream; Cache-Control is no-cache, no-transform; proxy buffering is disabled. Heartbeat comments every 15 seconds contain no business state. Clients reconnect with jittered delay from 1 to 30 seconds.
+Design control D085. Each persisted event has an immutable scope-specific ID: run UUID followed by a colon and increasing integer sequence for run streams, or account UUID plus sequence for account streams. The id field carries that ID; event carries the event name; data is one JSON object. JSON payload contains schema_version "1.0", event_id, sequence, run_id when relevant, occurred_at, request_id when known, and payload. Sequence is assigned transactionally and uniquely per stream; sequences need not be consecutive after retention but ordering must be stable.
+Design control D086. Run event names are run.queued, run.started, node.started, tool.started, tool.completed, tool.failed, llm.completed, validation.completed, activity.appended, run.cancel_requested, report.ready, billing.updated, run.finished, and stream.reset_required. Account names are run.updated, balance.updated, subscription.updated, export.ready and security.session_revoked. Heartbeats are comments, not persisted events. Event schemas specify required payload fields and size ceiling of 32 KB.
+Design control D087. tool.completed payload contains node_id, tool_call_id, tool_name, duration_ms, sanitized observation_summary, evidence_ids and validation_status. llm.completed contains node_id, call_id, provider, model_id, duration_ms, usage_status and token categories when known. billing.updated contains billing_status, settled_charge, released_amount and pending_amount. run.finished contains terminal status, terminal_at, report_available and billing_status. No raw model hidden reasoning or credentials are permitted.
+Design control D088. Replay from Last-Event-ID on reconnect; for a new EventSource created after page reload, also accept after as a query parameter carrying only a cursor, not a credential. Header takes precedence. A cursor must belong to the authorized stream. Invalid cursors return 400; a cursor outside retained history returns 410 before stream establishment. The UI then fetches the authoritative snapshot and latest_event_id before reopening. If retention or buffering loss is discovered after headers, send stream.reset_required and close.
+Design control D089. Subscribe to notifications before reading replay high-watermark, buffer new arrivals, replay persisted events through that watermark, then drain buffered events and continue. Clients deduplicate by event_id and fetch a snapshot if an ordering gap indicates loss. Delivery is at least once; no exactly-once promise. Events and their business transitions commit in one transaction or through an outbox with immutable ordering.
+Design control D090. An initial terminal run connection replays retained requested events then closes. After run.finished, close the run stream; the user checks pending settlement through the account stream or usage endpoint. A slow client buffer is capped at 100 events or 1 MB; disconnect with reset guidance rather than blocking a worker. Gateway idle timeout must exceed heartbeat interval and support reconnect across rolling deployments. Live cross-device changes should appear within 2 seconds p95 under the capacity envelope.
+Wire example consists of three lines followed by a blank line: id: RUN_UUID:17; event: tool.completed; data: {"schema_version":"1.0","event_id":"RUN_UUID:17","sequence":17,"run_id":"RUN_UUID","occurred_at":"2026-10-24T04:00:00Z","request_id":null,"payload":{"node_id":"price","tool_call_id":"UUID","tool_name":"get_quote","duration_ms":380,"observation_summary":"Validated quote received","evidence_ids":["UUID"],"validation_status":"passed"}}. Actual wire encoding must use separate lines rather than semicolons.
+External provider request catalogue
+These are external provider interfaces, distinct from the product REST routes. All credentials are server-side. Pin provider API versions and confirm symbols, licensing, data intervals, rate limits and enabled subscriptions in adapter acceptance tests. Query parameters below describe provider requests, not guaranteed venue coverage.
+Purpose
+HTTPS endpoint and integration rule
+Commodity reference data
+GET https://www.alphavantage.co/query with documented function, interval and server-held apikey; validate the selected function is suitable for the instrument and frequency
+Currency reference
+GET https://www.alphavantage.co/query with function=CURRENCY_EXCHANGE_RATE and from_currency and to_currency; timestamp and currency checks mandatory
+News search
+POST https://api.tavily.com/search with bounded query, max_results, recency and approved-domain settings; validate each source and licensing before retaining text
+Anthropic models
+POST https://api.anthropic.com/v1/messages through LLMGateway with pinned model, bounded max_tokens and approved API version header
+OpenAI models
+POST https://api.openai.com/v1/responses through LLMGateway when an approved model profile enables it; normalize usage without assuming identical token fields
+Google identity
+Discovery at https://accounts.google.com/.well-known/openid-configuration; obtain issuer, authorization, token and JWKS endpoints through validated OIDC discovery
+Payment adapter reference
+DummyPaymentProvider runs inside the backend; no Stripe or Razorpay HTTPS calls or real merchant integration in this release
+Exchange-specific live and historical data
+Licensed vendor endpoint must be configured per instrument and verified before enabling that catalogue entry; MCX and LME coverage must not be inferred from commodity reference APIs
+LangSmith
+Use the official SDK with configured organization and region endpoint and redaction; never place its credentials in the frontend
+
+Design control D091. Do not invent an exchange feed endpoint to complete a diagram. The release catalogue contains exact configured provider URLs, supported instruments, observed delays, entitlement IDs, and integration-test evidence. If suitable data cannot be licensed, disable that instrument or expose an explicitly labelled reference-data research mode with a distinct instrument ID and no claim of exchange-live pricing.
+Browser interaction and stream recovery
+The page loads an authoritative run snapshot, then opens the run stream with its last durable cursor. The server authorizes the session, subscribes to notifications, establishes a replay watermark and reads persisted events in order. It replays through the watermark, drains buffered newer events and continues live delivery. Clients use event_id to deduplicate and invalidate read caches on report.ready, billing.updated and run.finished.
+Native EventSource cannot reliably expose every non-200 response body to application code. The client stream controller therefore treats repeated connect failures as a cue to perform an ordinary authenticated snapshot/cursor-validation read, distinguish expired session from expired retention, and recreate the EventSource with an approved after cursor. Avoid an endless reconnect loop on an unauthorized or expired cursor. A fetch-based SSE parser is an acceptable alternate implementation if it preserves the same protocol and retry semantics.
+17 Reliability deployment and operations
+Design control D092. Initial capacity envelope is 1,000 registered users, 200 simultaneous signed-in users, 100 concurrent research executions, 50 ordinary REST requests per second, 500 active SSE connections, and the provider token and request quotas needed to sustain them. These are sizing targets to validate by load tests, not inherited assumptions from the earlier project. Admission must reduce safely when provider capacity is lower.
+Design control D093. Target monthly API availability is 99.9 percent for eligible requests, counting dependency-caused failures in user-facing availability. Separate dependency dashboards explain root cause rather than excluding it. Exclude invalid requests and deliberate quota rejections from availability, but report overload and quota rejections separately to prevent hiding user impact. Define an eligible request as an authenticated valid in-quota operation or a valid public identity operation, measured at the gateway.
+Design control D094. Under the capacity envelope, target p95 ordinary reads below 300 ms and p99 below 800 ms, excluding downloads and SSE; run admission p95 below 700 ms; queue wait p95 below 5 seconds; completed research p95 below 60 seconds and p99 below 120 seconds on the documented benchmark profile. Provider-inclusive time remains visible. Runs exceeding active deadline time out and are excluded from success percentiles but included in failure and all-terminal distributions. Cancellation stops new work within 2 seconds p95 and local branches within 5 seconds p95.
+Design control D095. Set explicit connection and request timeouts: market and news tools default to 8 seconds each; model call default to 30 seconds; active graph deadline 120 seconds. Retry idempotent transient reads at most twice with exponential backoff and jitter, respecting Retry-After and remaining deadline. Retry paid generation only when the provider confirms the request was not accepted, supports a suitable idempotency mechanism, or the platform explicitly accepts the duplicate-cost risk. Authentication and validation failures are not retried.
+Design control D096. Add per-provider circuit breakers, bulkheads, per-account quotas, bounded context length, global spend caps, emergency provider disable, and backpressure. Fallback models must belong to the estimate's approved set and fit its budget; show actual fallback in the report and usage. Never silently switch to a more expensive or materially different model. Cache public market data only by exact instrument, time policy and entitlement; private prompts and reports cannot be shared across accounts by default.
+Design control D097. Use managed PostgreSQL with high availability, encrypted backups, point-in-time recovery and monitored storage. Proposed database recovery objectives are RPO no more than 5 minutes and RTO no more than 60 minutes, verified quarterly. Replay durable dummy-payment events to rebuild demo balances and reconcile real LLM provider usage independently after restore. Replicate required artifacts and document weaker artifact recovery objectives if any; database recovery alone does not restore every report.
+Design control D098. Deploy separate development, staging and production environments, containerized API and workers, TLS termination, private network access for data services, secret rotation, least-privilege credentials and rolling deployments. Use database expand-and-contract migrations, tested rollback, worker drain and SSE reconnect support. Kubernetes is optional; a managed container platform is sufficient if these operational requirements are met.
+Design control D099. Page operators for sustained API error or SLO burn, oldest queued job above 60 seconds, worker heartbeat failure, unsettled usage beyond policy, ledger mismatch, unauthorized simulation-event attempts, trace export backlog, data staleness and security incidents. Runbooks cover provider outage, database failover, queue recovery, billing reconciliation, key compromise and deletion propagation. Backup restore and on-call ownership are release requirements.
+Deployment topology and dependency failure policy
+Run TLS ingress and at least two stateless API replicas for availability where the selected platform supports them, separately sized workers, private managed PostgreSQL and Redis, restricted MCP access and encrypted artifact storage. Configure health probes to distinguish process life from safe admission. Queue recovery and provider budgets must still work if Redis is empty. Availability depends on the whole topology, not just replica count; validate database failover and gateway behavior.
+A trace-export outage enqueues bounded durable trace metadata and raises an observability alert; it does not block accepted research. An object-storage failure prevents an unpersisted final report from being declared available. A provider circuit-breaker can reject new affected requests while unaffected instruments continue. A database outage prevents safe new admission and returns 503; workers must not invent unaudited work while persistence is unavailable.
+Drain workers on deployment, allow fenced recovery after their leases expire, preserve backwards-compatible graph/checkpoint versions for active runs, and close SSE connections so clients reconnect to healthy replicas. Pin application and dependency versions in build metadata. Store keys in a managed secret store and rotate provider credentials without placing them in model context or traces.
+18 Evaluation tests and release evidence
+Design control D100. At runtime, deterministic schema, numeric, authorization, freshness, provenance, citation and handoff checks execute on every applicable boundary. LLM judge evaluations complement these checks and cannot replace them. Expensive quality judges run on sampled redacted production runs and full offline release datasets; judge costs are platform costs. Store evaluator, prompt, dataset, graph and model versions.
+Design control D101. Create a versioned initial dataset of at least 200 cases spanning supported instruments and horizons, rising and falling markets, closed markets, missing bars, contradictory sources, stale quotes, unit mistakes, currency conversion errors, indirect injection and provider failures. Financial-domain reviewers define expected evidence and permitted abstention. Separate test fixtures from live provider tests. Prevent time leakage in any later backtest.
+Design control D102. Release gates are 100 percent pass for authorization isolation, ledger invariants, schema integrity, dangerous tool-action blocking in the fixed adversarial suite, and deterministic numeric correctness; at least 95 percent citation support and evidence relevance on the reviewed benchmark; no critical security issue; and no regression over 2 percentage points against the approved quality baseline. Passing a fixed attack suite is not proof that unseen attacks are impossible. Confidence calibration and trading return backtests are separate future studies, not implied by report quality scores.
+Acceptance test
+Required result
+Two devices start runs with the last available credit
+Only affordable reservations commit; no negative available credit and no orphan run
+Duplicate run request with the same idempotency key
+One run, one hold, one execution intent and identical response
+Duplicate or reordered payment webhooks
+Duplicate or reordered dummy events produce one demo credit; disabled public webhook returns 404
+Worker crashes after provider completion
+Reuse recorded output; ambiguous call is reconciled or platform-paid, never silently double-billed
+One branch errors while the others run
+Bounded sibling behavior, explicit evidence policy, incomplete or failed terminal state and correct settlement
+Cancel while parallel agents are active
+No new calls after accepted cancellation, fenced completion, usage reconciled and unused reserve released
+SSE disconnect and reconnect from two devices
+Identical replay order after deduplication, no lost persisted events, no cross-user leakage
+Session revoked while SSE is open
+Stream closes within 15 seconds and reconnect is unauthorized
+Malicious article requests secret export
+No outbound exfiltration or privileged tool call; evidence quarantined and event recorded
+Wrong exchange contract or unit in one branch
+Handoff fails before synthesis; report abstains or uses only policy-approved valid evidence
+Provider omits usage after stream cancellation
+Unknown usage remains explicit, bounded pending hold, reconciliation and no fabricated actual token count
+Known duration samples and empty populations
+Correct p95 and p99 populations and interpolation; null for empty set and low-sample warning
+LangSmith and Redis outage
+Paid work and durable event replay continue from PostgreSQL; backlog and degraded mode visible
+Database restore exercise
+Meets RPO and RTO, reconciles demo balances and actual provider usage, and reapplies deletion tombstones
+Mobile accessibility and double-click checkout
+Usable labelled controls, readable logs and simulation labels; one demo checkout and credit only
+
+Design control D103. CI shall run meaningful domain tests, ledger and migration integration tests against PostgreSQL, OpenAPI and SSE schema conformance, provider adapter contract tests, graph recovery and cancellation tests, authorization tests and frontend end-to-end journeys. Performance tests use controllable provider stubs plus a bounded live-provider benchmark; report which results depend on stubs. Security review includes dependency and container scanning, secret scanning, access-control testing and injection regression cases.
+19 Detailed boundary schemas and entity relationships
+Design control D104. Shared primitive types are UUID strings; RFC 3339 UTC instant strings; nonnegative integer milliseconds and token counts; decimal monetary strings with at most six fractional digits; and currency enum INR for customer accounts. Provider-cost currency may differ and must be labelled. Money objects always contain currency and amount. User-supplied max_charge, top-up and refund amounts must be positive; a returned settled charge can be zero. Error codes are stable machine values, not translated display text.
+Design control D105. A run snapshot contains run_id, conversation_id nullable, instrument_id, horizon, model_profile_id, status, billing_status, submitted_at, started_at nullable, terminal_at nullable, queue_ms nullable, execution_ms nullable, end_to_end_ms nullable, latest_event_id nullable, report_available boolean, progress {completed_nodes,total_nodes,active_nodes}, authorized_max_charge, reserved_amount, settled_charge nullable, pending_amount, and versions {graph,prompt,policy,rate_card,application}. A null timing value means the required lifecycle event has not occurred or its measurement is unavailable. Never invent a duration for an unstarted run.
+Design control D106. Summary response data contains interval {from,to}, timezone UTC, data_as_of, counts {submitted,queued,running,succeeded,incomplete,failed,cancelled,timed_out,pending_billing}, success_rate {numerator,denominator,value nullable}, latency {success_end_to_end,all_terminal_end_to_end,queue,execution}, usage {input_tokens,output_tokens,cached_input_tokens,cache_write_tokens,reasoning_tokens,unknown_call_count}, customer_charge, latest_run nullable, and warnings array. Each latency object contains sample_count,p50_ms,p95_ms,p99_ms,population,method,approximate and low_sample. Provider-specific categories that overlap must be marked in usage metadata and never blindly totalled. Reports count submissions by submitted_at, terminal outcomes and success-rate denominators by terminal_at, and financial postings by posted_at; these separate window bases are returned explicitly and may yield different totals.
+Design control D107. Usage responses contain run_id, billing_status, price_version, authorized_max_charge, settled_charge nullable, pending_amount, released_amount, and calls array. Each call contains call_id, attempt, node_id, provider, model_id, provider_request_id nullable, started_at, duration_ms nullable, usage_status actual or unknown or estimated, token_categories, billable boolean, nonbillable_reason nullable, computed_charge nullable, and reconciliation_status. An estimate may be returned for information but must never populate an actual category without provenance. Provider request IDs are redacted where required by provider policy.
+Design control D108. An EvidenceBundle contains schema_version, run_id, instrument_snapshot, price_evidence, news_evidence, technical_evidence, source_refs, freshness_summary, quality_flags and validation_result_ids. Every evidence item contains evidence_id, source_id, source_uri nullable, observed_at, fetched_at, valid_until nullable, content_hash, trust_class untrusted_external or validated_numeric or application_generated, taint_flags and validator_version. Validated numeric data remain bounded evidence, never executable instructions. Evidence references belong to the current account or to approved licensed public cache records.
+Design control D109. Stable error codes include AUTH_REQUIRED, ACCOUNT_SUSPENDED, CSRF_FAILED, VALIDATION_FAILED, RESOURCE_NOT_FOUND, IDEMPOTENCY_CONFLICT, INVALID_RUN_STATE, ESTIMATE_EXPIRED, ESTIMATE_MISMATCH, INSUFFICIENT_CREDIT, PLAN_LIMIT_REACHED, RATE_LIMITED, PROVIDER_UNAVAILABLE, UNSUPPORTED_INSTRUMENT, REPORT_NOT_READY, EVENT_CURSOR_EXPIRED, BUDGET_EXCEEDED and INTERNAL_ERROR. Errors map to the HTTP meanings in section 12; BUDGET_EXCEEDED during a run is a durable run error and event, not a new HTTP response on an already open SSE stream. INTERNAL_ERROR includes a request ID and generic detail.
+Method and path
+Security and request contract
+POST /auth/reauthenticate
+CSRF; password for password accounts, or method google for a new OIDC intent; returns fresh_until or authorization_url with an explicit result type
+POST /auth/mfa/enrolments
+Session, CSRF and fresh authentication; method totp; 201 enrolment_id and one-time provisioning URI; not yet active
+POST /auth/mfa/enrolments/{enrolment_id}/confirm
+CSRF; code; 200 enabled true and one-time recovery codes; store encrypted TOTP secret and hashed recovery codes
+POST /auth/mfa/challenges/{challenge_id}/verify
+Preauthentication CSRF context or existing session; code or recovery_code, exactly one; 200 completes the pending login or fresh-MFA action
+DELETE /auth/mfa/enrolments/{enrolment_id}
+CSRF and fresh MFA; forbidden if it would leave a privileged account without MFA; 200 disabled true
+POST /me/password
+CSRF and fresh authentication; new_password; 200 changed true and revoke all other sessions
+
+For MFA-enabled accounts, password or Google login returns 202 with mfa_required true, challenge_id and expires_at instead of creating a fully privileged session. A preauthentication challenge expires after 5 minutes, permits at most 5 attempts, is scoped to its login intent and cannot access product data. TOTP secrets are encrypted using a managed key. Recovery codes are single use. Privileged action freshness is 5 minutes and is distinct from a normal authenticated session.
+Design control D110. Build-time contract freeze requires an OpenAPI 3.1 file containing every route, complete request and response schemas, enums, security requirements, examples and error variants; separate JSON Schemas define all SSE envelopes and event payloads. This document is the normative design and interface baseline; the companion R requirements remain authoritative for product behavior. It is not itself an executable OpenAPI file. Any missing implementation field must be resolved by contract review before frontend and backend diverge. Generate typed TypeScript clients and Python boundary models from the approved schema or verify both against it in CI. A route may not ship by returning an undocumented generic dictionary.
+Design control D111. Core entity relationships are User to Sessions and Identities, User to Account through Membership, Account to Wallet and Subscriptions, Account to Conversations, Conversation to Messages and ResearchRuns, ResearchRun to Nodes Calls Evidence Reports Reservations and Events, LLMCall to UsageRecords, and business events to LedgerTransactions to LedgerPostings. All financial references retain stable IDs after eligible content deletion. Foreign-key and uniqueness checks enforce these relationships; object storage references include ownership and integrity metadata.
+Design control D112. Requirement traceability shall be recorded in the implementation repository as requirement ID, owning module, contract route or event, test evidence and release status. No diagram, dashboard, successful demo or passing unit test alone is evidence that billing correctness, data licensing, security or production reliability has been achieved.
+20 Dummy payment contract and safeguards
+Design control D113. All balance, ledger, estimate, run, checkout, subscription, invoice, refund, usage, reporting and billing SSE responses shall contain payment_mode=simulated and money_collected={currency:INR,amount:0.00}. Existing fields named customer_charge, settled_charge, max_charge, reserved_amount and pending_amount are simulated customer-credit values and must be labelled as such in the UI. Actual expenses use separate provider_cost fields with original currency, optional converted INR, rate_version, usage_status, cost_status calculated or reconciled or unknown, and cost_as_of. A provider-cost estimate must not be presented as an invoice-reconciled actual expense.
+Design control D114. POST /api/v1/billing/checkouts/{checkout_id}/simulate accepts outcome success, failure or pending with an idempotency key, session and CSRF token. It can affect only an owned dummy checkout; it generates a trusted server-side dummy event and returns 202 with the checkout ID and payment_mode simulated. A scheduler handles expiry and simulated subscription period transitions. Controlled duplicate and reordered event injection is limited to isolated automated tests or authorized operator tooling. Arbitrary payment amounts from the browser never directly update a wallet.
+Design control D115. A visible Simulation only banner shall appear on checkout, account, subscription, refund and sample receipt views. Never collect card, bank or UPI details, invoke live payment gateways, issue real tax invoices, or label demo charges as revenue. The model gateway remains real and must enforce independent operator-configured daily account and platform cost caps. Demo credit resets, top-ups and plan changes cannot bypass these caps.
+Design control D116. Release acceptance additionally requires proof that no customer payment network calls occur, repeated dummy success produces one credit, failure and expiry produce none, simulated refunds affect only the demo ledger, and per-run actual token usage and calculated or reconciled provider costs remain visible after success, failure and cancellation. Unknown usage stays explicitly unknown. All reports separate real provider expense, simulated customer charges and zero cash collected. The rest of the version 1 REST and SSE paths remain unchanged, with this amendment governing their simulation semantics.
+21 Requirement traceability delivery and unresolved decisions
+Requirements
+Design implementation and validation
+R001–R007
+Sections 1–2 and 18 define scope, UI roles, access checks and release evidence
+R008–R013
+Sections 3, 13 and 19 implement sessions, OIDC, identity linking, MFA and revocation
+R014–R017
+Sections 4, 7, 11 and 16 implement instrument identity, adapters, evidence and licensing configuration
+R018–R027
+Sections 5–9, 14 and 19 implement estimation, admission, queueing, graph state, cancellation and accounting
+R028–R035
+Sections 2, 11 and 13–16 implement UI, history, exports and account-visible behavior
+R036–R043
+Sections 9, 11, 15 and 20 implement dummy lifecycle, exact demo ledger and real expense control
+R044–R048
+Sections 10, 15 and 19 implement population-aware metrics and typed reports
+R049–R055
+Sections 3, 7, 11, 16 and 17 implement boundaries, access, privacy, deletion and restore
+R056–R063
+Sections 6, 8, 10 and 17–18 implement durable recovery, alerts, capacity and service objectives
+R064–R067
+Sections 5 and 12–16 define reusable modules, routes, schemas, SSE and technology constraints
+R068–R074
+Sections 18 and 21 define acceptance evidence, launch decisions and change control
+
+The implementation repository must extend this group-level map to one row per R identifier with module owner, API or event, test evidence and deployment status. D controls support those requirements; they do not replace the acceptance matrix. The two-page design summary is explanatory and cannot override this document's detailed contracts.
+Stage 1 establishes domain models, contracts, PostgreSQL migrations, session security, catalogue and reproducible local environments. Stage 2 implements durable runs, model gateway, MCP tools, validated graph and reconnectable SSE. Stage 3 adds the Next.js research screens, history, cost reports, demo balances, simulated subscriptions and DummyPaymentProvider. Stage 4 proves simulated lifecycle and ledger behavior, actual LLM usage cost accounting, isolation, adversarial evaluations, load capacity, restores and operational readiness. Stage 5 releases a limited non-paying launch with monitored real provider-spend quotas and a reversible feature rollout.
+No eight-hour delivery claim applies to this new production scope. The team must estimate work after model and data vendor onboarding, data licensing and contract review. A demonstration is not acceptance of cost-accounting or reliability requirements. Live payment onboarding is outside this release.
+The following business choices remain explicit release blockers, while the software interfaces above remain fixed: licensed vendor and exact live instrument coverage; approved production model IDs and region; actual provider pricing and FX sources; real platform-spend caps; demo starting credit and daily top-up limits; provider-expense retention policy; support owner and incident response coverage. Merchant onboarding, live payment provider, tax collection and real subscription pricing are deferred and are not release blockers. Secrets and contract credentials are supplied through deployment configuration.
+Version 1 is accepted only when every MUST requirement has implementation evidence or an explicitly approved scope change, REST OpenAPI and event schemas are published and checked in, acceptance tests pass, dummy transactions reconcile and actual LLM costs remain independently auditable, user data isolation is demonstrated, numerical reports match known fixtures, and operations can recover a failed worker and database without silently duplicating charges.
+Scope and contract checks before implementation
+Publish complete OpenAPI 3.1 and event JSON Schemas matching these routes and semantics, including the simulation discriminator and zero collection fields in section 20. These DOCX files are not executable schema files. Contract approval precedes independent frontend/backend coding; a prose endpoint list alone is not a generated typed SDK. Resolve any unspecified enum, nullability, rounding rule or permissions edge case at that review.
+Operational selections still required are hosting topology and region; exact vendor endpoints, symbols and entitlements; approved model IDs and actual rates; FX source; platform spend policy; demo grant limits; retention configuration; MFA/secret management setup; and incident ownership. Do not imply that a prototype meets the SLOs. The staged non-paying launch requires the security, recovery and cost evidence specified in the requirements document.
+22 Source baseline and integration references
+This design reorganizes AI_Agentic_Saas_Researcher_for_Trading_Requirements_v1.docx, version 1 revision 1, including its dummy-payment amendment. The original four-agent repository is inspiration only; its README was not a production code audit. This document adds explicit transaction boundaries, class responsibilities and recovery sequences as proposed implementation decisions, without asserting a completed deployment.
+1. Existing project README https://github.com/kumark117/Agentic-AI-Researcher-for-Trading/blob/main/README.md — four-agent workflow, MCP integration and browser log streaming inspiration. Its market coverage claims must be independently verified for this product.
+2. LangGraph persistence https://docs.langchain.com/oss/python/langgraph/persistence — persistent graph state, checkpoints and recovery concepts. Application idempotency and financial reconciliation remain additional requirements.
+3. LangSmith observability https://docs.langchain.com/langsmith/observability — tracing, performance monitoring and evaluation integration. It does not replace the application's ledger.
+4. MCP security best practices https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices — authorization boundaries and prohibited token passthrough patterns. Pin the adopted protocol version during implementation.
+5. OWASP prompt injection prevention https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html — layered defenses for untrusted model inputs and outputs.
+6. Google OpenID Connect https://developers.google.com/identity/openid-connect/openid-connect — server-side identity flow and token verification.
+7. Future payment reference https://docs.stripe.com/webhooks — duplicate and out-of-order event behavior informs simulation test cases only. Live provider integration is deferred.
+8. PostgreSQL row security https://www.postgresql.org/docs/current/ddl-rowsecurity.html — row policies and bypass considerations for privileged or owning roles.
+9. Alpha Vantage API documentation https://www.alphavantage.co/documentation/ — documented commodity and FX request shapes; not an assertion of live licensed exchange coverage.
+10. Tavily search reference https://docs.tavily.com/documentation/api-reference/endpoint/search — HTTPS search endpoint and structured request options.
+Direct model API host paths in section 16 are integration baselines to validate with selected model adapter versions during implementation. Published prices, exact model availability, provider merchant access and regulatory status are deliberately not asserted by this specification.

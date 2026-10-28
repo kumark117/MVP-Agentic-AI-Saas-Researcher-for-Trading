@@ -1,0 +1,28 @@
+
+AI Agentic Saas Researcher for Trading
+Requirements specification summary
+Version 2 • 24 October 2026 • Page 1 of 2
+1 What this document specifies
+The requirements define what the product must do, the rules it must follow and the evidence needed for acceptance. They include its functional specification: user journeys, outputs, state changes and error behavior. Technical construction details belong in the separate design specification. This is a proposed product baseline, not proof of an implemented production service.
+2 Product scope and users
+Build a new SaaS inspired by the four-agent trading researcher. A member registers, verifies email, logs in with password or optional Google identity, and may use several devices independently. All devices see the same owned runs, history and balance; watching a run twice never starts it twice. Members can revoke one device or all sessions. Support, finance and platform roles have limited, audited access; administrators require MFA.
+Version 1 provides research only. It does not place broker orders, hold investment capital or collect real customer money. Payments, subscriptions, top-ups and refunds are simulated. Demo credits have no cash value. LLM calls, provider expenses and performance measurements remain real.
+3 Required research behavior
+Members select an enabled metal, exchange, exact instrument or futures contract, horizon and model profile. Show freshness, an estimate, hypothetical charge ceiling and demo credit. Support only verified data-vendor combinations; a commodity reference series cannot be labelled a live exchange-contract quote.
+Admit one durable run after checking identity, entitlement, credit and independent real spending limits. Collect Price, News and Technical evidence concurrently, validate it and synthesize a cited report. Calculate indicators deterministically. Report BUY, SELL, HOLD or NO_SIGNAL; insufficient or unsafe evidence cannot be disguised as HOLD.
+4 Required experience
+Provide a responsive Next.js research workspace, progress and sanitized activity panels, evidence and summary panels, history, usage reports, demo account management, security settings and About in a new tab. Activity shows actions and observations, not private model reasoning. Reports show supporting and opposing evidence, limitations, freshness and confidence classification.
+Research survives browser closure. Cancellation is explicit and propagates to parallel work. Follow-ups create separately estimated runs after the preceding run ends. Persist interactions, reports and feedback; allow account-scoped filtering and exports. Accessibility targets WCAG 2.2 AA.
+
+5 Costs reports and contracts
+Version 2 • Requirements summary • Page 2 of 2
+Report actual provider tokens, model and rate versions, calculated or reconciled provider expense, hypothetical customer charges and zero money collected separately. Unknown tokens remain unknown; a rate-card calculation is not labelled invoice-reconciled cost. Adding demo credit cannot bypass real per-run, account-day or platform spending limits. Repeated dummy events must not duplicate credit or debits.
+Show totals by outcome, successful runs, latest-run detail, model usage, retries, validation errors and cost trends. Measure queue, execution and end-to-end time separately. p50/p95/p99 must include the population and sample count; empty samples return null and small populations are flagged. Do not average daily percentiles.
+Use versioned HTTPS REST for commands/reads and replayable authenticated SSE for progress. Contracts require typed payloads, stable errors, idempotency and UTC timestamps. Several devices observe one execution. Heartbeats are every 15 seconds; expired event history requires a fresh snapshot. Exact routes and schemas are detailed in the design document.
+6 Production quality requirements
+Accepted work must be durable, recoverable and protected from stale workers or duplicate accounting. Every applicable API, MCP, evidence and model-output boundary is validated. Treat external text and prior outputs as untrusted data; step 1 output cannot become a privileged instruction in step 2. Enforce account isolation, safe tools, secret protection, privacy, retention and deletion.
+Use finite calls, deadlines, fair queues, controlled retries, circuit breakers and spend caps. Trace each production run through LangSmith and correlated operational records. Observability outages must not erase or stop accepted research. PostgreSQL stores owned identity/account/history, execution, accounting and audit information.
+Proposed targets include 99.9% monthly API availability, research p95 below 60 seconds and p99 below 120 seconds, with provider time included. Initial capacity targets include 100 concurrent research executions and 500 SSE connections. Database recovery targets are RPO within 5 minutes and RTO within 60 minutes. These must be tested, not assumed.
+7 Release acceptance and unresolved decisions
+Require isolation, cancellation, recovery, ledger, contract and frontend tests; at least 200 reviewed evaluation cases; at least 95% citation support and relevance on the benchmark; and no critical security issue. Verify vendor licensing, actual model/rate configuration, real spending limits, retention and incident ownership. Demonstrate no real customer payment calls.
+The full Requirements Specification version 2 contains R001–R074 and is authoritative. The companion design explains how to implement them. Real payments, teams and scheduled research are future scope; baseline reliability and security remain mandatory.
