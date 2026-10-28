@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import math
+import threading
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -63,16 +64,41 @@ def frame_to_bars(frame: Any) -> list[Bar]:
     return bars
 
 
+def _import_yfinance() -> Any:
+    import yfinance
+
+    return yfinance
+
+
 class YahooFinanceClient:
     name = SOURCE
 
-    def __init__(self, enabled: bool, timeout_s: float = 3.0) -> None:
+    def __init__(self, enabled: bool, timeout_s: float = 3.0, loader: Any = None) -> None:
         # Per attempt, shorter than the 8 s tool deadline so a stalled call can be retried.
         self.enabled = enabled
         self.timeout_s = timeout_s
         # yfinance shares session and cookie state across threads and is not safe to call
         # concurrently; parallel branches would otherwise stall each other (observed live).
         self._lock = asyncio.Lock()
+        # `import yfinance` takes ~8 s (pandas, curl_cffi). Done lazily inside the first call
+        # it blew that call's timeout, so start it in the background as soon as we exist.
+        self._imported = threading.Event()
+        self._loader = loader or _import_yfinance
+        self._yf: Any = None
+        if enabled:
+            threading.Thread(target=self._preload, name="yfinance-import", daemon=True).start()
+
+    def _preload(self) -> None:
+        try:
+            self._yf = self._loader()
+        finally:
+            self._imported.set()
+
+    async def warm(self, timeout_s: float = 30.0) -> bool:
+        """Wait (outside any per-call timeout) until the library is imported."""
+        if not self.enabled:
+            return False
+        return await asyncio.to_thread(self._imported.wait, timeout_s)
 
     def _check(self, symbol: str) -> None:
         if not self.enabled:
@@ -87,9 +113,11 @@ class YahooFinanceClient:
         yf_interval, max_back = INTERVALS[interval]
         start = max(start, datetime.now(UTC) - max_back)
 
-        def call() -> Any:
-            import yfinance as yf
+        yf = self._yf
+        if yf is None and self._imported.is_set():
+            raise ProviderError("NOT_CONFIGURED", "yfinance could not be imported")
 
+        def call() -> Any:
             return yf.Ticker(symbol).history(
                 start=start,
                 interval=yf_interval,
@@ -98,6 +126,10 @@ class YahooFinanceClient:
                 raise_errors=True,
             )
 
+        if not self._imported.is_set():
+            raise ProviderError(
+                "PROVIDER_UNAVAILABLE", "Yahoo client is still starting", retryable=True
+            )
         try:
             async with self._lock:
                 frame = await asyncio.wait_for(asyncio.to_thread(call), timeout=self.timeout_s)

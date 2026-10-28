@@ -130,6 +130,13 @@ class ToolService:
             raise ToolFailure("NOT_CONFIGURED", f"no adapter for provider {ins.provider}")
         return p
 
+    async def warm(self) -> None:
+        """Let slow-starting providers finish loading before calls (e.g. yfinance import)."""
+        for provider in {id(p): p for p in self.providers.market.values()}.values():
+            warm = getattr(provider, "warm", None)
+            if warm is not None:
+                await warm()
+
     async def _call(self, fn: Callable[[], Awaitable[T]]) -> T:
         """Deadline plus bounded retries for transient, idempotent reads (D095)."""
         loop = asyncio.get_running_loop()

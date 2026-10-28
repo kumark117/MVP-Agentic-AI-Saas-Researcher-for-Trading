@@ -79,6 +79,9 @@ def _verify_args(p: argparse.ArgumentParser) -> None:
     p.add_argument(
         "--apply", action="store_true", help="enable passing instruments and disable failing ones"
     )
+    p.add_argument(
+        "--instrument", action="append", help="verify only this canonical_id (repeatable)"
+    )
 
 
 @command("catalog-verify", "Run the adapter acceptance test for every instrument", _verify_args)
@@ -105,7 +108,9 @@ async def catalog_verify(db: Database, ns: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 3
-    results = await CatalogVerifier(db, build_tool_service(settings, db)).verify_all(apply=ns.apply)
+    results = await CatalogVerifier(db, build_tool_service(settings, db)).verify_all(
+        apply=ns.apply, only=ns.instrument
+    )
     if ns.apply:
         async with db.transaction(DbContext.for_system()) as conn:
             await audit(

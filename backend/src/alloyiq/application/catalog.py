@@ -131,9 +131,12 @@ class CatalogVerifier:
         reason = None if passed else "Adapter acceptance test failed: " + "; ".join(failed)[:400]
         return VerifyResult(ins.canonical_id, passed, checks, reason)
 
-    async def verify_all(self, *, apply: bool) -> list[VerifyResult]:
+    async def verify_all(self, *, apply: bool, only: list[str] | None = None) -> list[VerifyResult]:
         async with self.db.transaction(DbContext.for_system()) as conn:
             items = await self.repo.list_instruments(conn)
+        if only:
+            items = [i for i in items if i.canonical_id in only]
+        await self.tools.warm()
         results = []
         for ins in items:
             res = await self.verify(ins)

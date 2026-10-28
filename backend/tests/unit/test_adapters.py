@@ -224,7 +224,6 @@ async def test_yahoo_disabled_and_symbol_allowlist() -> None:
 
 async def test_yahoo_calls_are_serialised_and_time_out_per_attempt(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     """yfinance is not thread-safe: parallel branches must not call it concurrently."""
-    import sys
     import threading
     import time as _time
     import types
@@ -253,8 +252,9 @@ async def test_yahoo_calls_are_serialised_and_time_out_per_attempt(monkeypatch) 
                 index=idx,
             )
 
-    monkeypatch.setitem(sys.modules, "yfinance", types.SimpleNamespace(Ticker=Ticker))
-    client = YahooFinanceClient(enabled=True, timeout_s=2.0)
+    fake = types.SimpleNamespace(Ticker=Ticker)
+    client = YahooFinanceClient(enabled=True, timeout_s=2.0, loader=lambda: fake)
+    assert await client.warm(5)  # the (fake) library import finished in the background
     import asyncio
     from datetime import UTC, datetime, timedelta
 
@@ -269,8 +269,9 @@ async def test_yahoo_calls_are_serialised_and_time_out_per_attempt(monkeypatch) 
             _time.sleep(0.5)
             return super().history()
 
-    monkeypatch.setitem(sys.modules, "yfinance", types.SimpleNamespace(Ticker=Slow))
-    slow = YahooFinanceClient(enabled=True, timeout_s=0.1)
+    slow_fake = types.SimpleNamespace(Ticker=Slow)
+    slow = YahooFinanceClient(enabled=True, timeout_s=0.1, loader=lambda: slow_fake)
+    await slow.warm(5)
     try:
         await slow.get_history("GC=F", function="", interval="1d", start=start)
         raise AssertionError("expected a timeout")
