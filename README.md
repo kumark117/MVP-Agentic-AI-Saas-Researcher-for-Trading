@@ -8,8 +8,11 @@ in parallel, and a Signal agent writes a cited report (BUY / SELL / HOLD / NO_SI
 - **Model and data costs are real**, measured, and capped by spend limits that demo credit cannot raise.
 
 Specs: `docs/specs/` (Requirements v2 R001-R074, Design v2, and the MVP build prompt).
-Status: **MVP build complete (P0-P9)**, pending the owner's live checks: catalogue verification
-with real data keys, rate-card price verification, and one live research run. See
+Status: **MVP build complete (P0-P9) and live-verified.** All four instruments passed
+catalogue verification with real data keys, rate card v1 is active, a live gold swing run
+returned SELL with 15 citations for about USD 0.21, and `alloyiq-admin eval --live` passed
+10/10 with no unknown usage. The 9 e2e runs cover 7 browser journeys; the 2 accessibility
+journeys also run on a mobile viewport. See
 `docs/traceability.csv`, `docs/deviations.md`, `docs/decisions.md` and `docs/ops/runbook.md`.
 
 ## Prerequisites (Windows 11)
