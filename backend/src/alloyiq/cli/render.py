@@ -2,6 +2,7 @@
 
     python -m alloyiq.cli.render exec -- <command...>   run a command with the role URLs set
     python -m alloyiq.cli.render predeploy              bootstrap roles, migrate, seed
+    python -m alloyiq.cli.render worker                 MCP server (localhost) + worker
 
 Render's Blueprint passes the database host, port and name, plus one generated password
 per application role; it cannot compose URLs. `exec` builds DATABASE_URL,
@@ -17,9 +18,17 @@ migrator create objects; then it runs `alembic upgrade head` and the idempotent 
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
 import sys
+import time
+import urllib.request
+from collections.abc import Callable
 from urllib.parse import quote
+
+MCP_PORT = 8100
+MCP_HEALTH = f"http://127.0.0.1:{MCP_PORT}/health"
+STOP_GRACE_S = 20.0
 
 ROLES = {
     "alloyiq_api": "ALLOYIQ_API_DB_PASSWORD",
@@ -101,10 +110,80 @@ def predeploy() -> int:
     return 0
 
 
+def _mcp_ready(url: str = MCP_HEALTH) -> bool:
+    try:
+        with urllib.request.urlopen(url, timeout=2) as r:  # noqa: S310 - fixed localhost URL
+            return bool(r.status == 200)
+    except OSError:
+        return False
+
+
+def _stop(*procs: subprocess.Popen[bytes]) -> None:
+    for p in procs:
+        if p.poll() is None:
+            p.terminate()
+    for p in procs:
+        try:
+            p.wait(timeout=STOP_GRACE_S)
+        except subprocess.TimeoutExpired:
+            p.kill()
+            p.wait()
+
+
+def supervise(
+    mcp_cmd: list[str],
+    worker_cmd: list[str],
+    env: dict[str, str],
+    ready: Callable[[], bool] = _mcp_ready,
+    ready_timeout_s: float = 90.0,
+) -> int:
+    """Run the MCP server and the worker in one container (Render has no free private
+    services; DV-15). The worker starts once MCP is healthy. If either process exits, the
+    other is stopped and the exit code is returned, so Render restarts the container."""
+
+    def on_signal(signum: int, _frame: object) -> None:
+        raise SystemExit(128 + signum)  # Render sends SIGTERM on deploy and shutdown
+
+    previous = {sig: signal.signal(sig, on_signal) for sig in (signal.SIGTERM, signal.SIGINT)}
+    mcp = subprocess.Popen(mcp_cmd, env=env)  # noqa: S603 - fixed commands
+    procs = [mcp]
+    try:
+        deadline = time.monotonic() + ready_timeout_s
+        while not ready():
+            if mcp.poll() is not None:
+                print("mcp exited before it was ready", flush=True)
+                return mcp.returncode or 1
+            if time.monotonic() > deadline:
+                print("mcp did not become ready", flush=True)
+                return 1
+            time.sleep(0.5)
+        worker = subprocess.Popen(worker_cmd, env=env)  # noqa: S603 - fixed commands
+        procs.append(worker)
+        while True:
+            for p, name in ((mcp, "mcp"), (worker, "worker")):
+                if p.poll() is not None:
+                    print(f"{name} exited with {p.returncode}; stopping the container", flush=True)
+                    return p.returncode or 1
+            time.sleep(1.0)
+    finally:
+        _stop(*procs)  # never leave a child behind, whatever ended the loop
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+
+
+def run_worker() -> int:
+    env = {**_with_urls(), "MCP_HOST": "127.0.0.1", "MCP_URL": f"http://127.0.0.1:{MCP_PORT}/mcp"}
+    env["MCP_PORT"] = str(MCP_PORT)
+    py = sys.executable
+    return supervise([py, "-m", "alloyiq.mcp_server"], [py, "-m", "alloyiq.worker"], env)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if args[:1] == ["predeploy"]:
         return predeploy()
+    if args[:1] == ["worker"]:
+        return run_worker()
     if args[:1] == ["exec"]:
         cmd = args[2:] if args[1:2] == ["--"] else args[1:]
         if not cmd:

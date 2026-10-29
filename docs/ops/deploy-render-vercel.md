@@ -3,7 +3,7 @@
 ```
 browser ──► https://<project>.vercel.app ──(/api/* rewrite)──► https://alloyiq-api.onrender.com
                  Next.js (Vercel)                                 FastAPI (Render free web)
-                                                                  worker (Render Starter, paid)
+                                                                  worker + MCP tools (Render Starter, paid)
                                                                   Postgres 16 (Render free)
                                                                   Key Value (Render free)
 ```
@@ -17,7 +17,7 @@ cookies stay first-party. What differs from the local stack is recorded as DV-15
 |---|---|---|
 | Frontend | Vercel Hobby (free) | Personal, non-commercial use only |
 | API | Render free web service | Sleeps after 15 min idle; the first request then takes up to about a minute |
-| Worker | Render Starter (paid, about USD 7/month) | Always on |
+| Worker | Render Starter (paid, about USD 7/month) | Always on; also runs the MCP tool server on localhost |
 | Postgres | Render free | 1 GB; **expires 30 days after creation** (14-day grace) unless upgraded |
 | Key Value | Render free | In-memory only, which is fine (ADR-005) |
 | Email | Gmail SMTP | Needs a Gmail **app password**; low daily sending limits |
@@ -58,7 +58,9 @@ cookies stay first-party. What differs from the local stack is recorded as DV-15
 3. Apply. The worker's pre-deploy step runs `python -m alloyiq.cli.render predeploy`: it
    creates the `alloyiq_api`, `alloyiq_worker` and `alloyiq_migrator` roles, runs the
    migrations and seeds the catalogue, plans, model profiles and draft rate card. It is safe to
-   re-run on every deploy.
+   re-run on every deploy. The worker then starts with `python -m alloyiq.cli.render worker`,
+   which launches the MCP tool server on `127.0.0.1:8100` and, once it is healthy, the worker.
+   If either exits, both stop and Render restarts the container.
 
 ## 4. One-time activation (Render worker → Shell)
 
@@ -87,3 +89,4 @@ builds the role database URLs from the Blueprint's variables.
 | `PUBLIC_ORIGIN must be an https:// origin` at start | It's set to `http://` |
 | Database disappears after about 30 days | Render free Postgres expired; upgrade it before then |
 | Live progress stream reconnects during a run | Expected through the proxy: the client resumes from its last event |
+| Worker logs `mcp did not become ready` | The MCP server failed to start; its error is in the lines just above |

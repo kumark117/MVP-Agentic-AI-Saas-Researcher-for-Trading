@@ -2,8 +2,9 @@
 # The frontend runs on Vercel and proxies /api/* here, so the browser sees one origin.
 #
 #   api     free web service (sleeps after 15 min idle)
-#   worker  Starter background worker (paid): research runs, email, payments, purge;
-#           runs the five tools in process (no private MCP service on Render free)
+#   worker  Starter background worker (paid): research runs, email, payments, purge.
+#           The MCP tool server runs in the same container on 127.0.0.1:8100
+#           (`alloyiq.cli.render worker`), since Render free has no private services
 #   db      free Postgres 16 (expires 30 days after creation unless upgraded)
 #   cache   free Key Value (rate limits and caches only; ADR-005)
 #
@@ -18,8 +19,6 @@ envVarGroups:
         value: render
       - key: ARTIFACT_BACKEND
         value: postgres
-      - key: TOOL_GATEWAY
-        value: in_process
       - key: SESSION_SECRET
         generateValue: true
       - key: ALLOYIQ_API_DB_PASSWORD
@@ -64,7 +63,7 @@ services:
     region: singapore
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    dockerCommand: python -m alloyiq.cli.render exec -- python -m alloyiq.worker
+    dockerCommand: python -m alloyiq.cli.render worker  # MCP on localhost, then the worker
     preDeployCommand: python -m alloyiq.cli.render predeploy
     envVars:
       - fromGroup: alloyiq-shared
@@ -76,6 +75,8 @@ services:
         fromDatabase: { name: alloyiq-db, property: port }
       - key: DB_NAME
         fromDatabase: { name: alloyiq-db, property: database }
+      - key: MCP_SERVICE_TOKEN  # worker -> local MCP server (never leaves the container)
+        generateValue: true
       - key: DATABASE_ADMIN_URL  # pre-deploy only: creates the three app roles
         fromDatabase: { name: alloyiq-db, property: connectionString }
       - key: REDIS_URL

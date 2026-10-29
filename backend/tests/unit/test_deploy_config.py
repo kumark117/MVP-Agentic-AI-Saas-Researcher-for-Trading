@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import sys
+import time
 from typing import Any, ClassVar
 from urllib.parse import unquote, urlsplit
 
@@ -10,7 +13,7 @@ from pydantic import SecretStr
 
 from alloyiq.adapters.artifacts import LocalArtifactStore, PgArtifactStore, build_artifact_store
 from alloyiq.adapters.email import OutgoingEmail, SmtpEmailSender
-from alloyiq.cli.render import role_urls
+from alloyiq.cli.render import role_urls, supervise
 from alloyiq.config import Settings
 
 ENV = {
@@ -98,3 +101,43 @@ def test_artifact_backend_selects_the_store(tmp_path: object) -> None:
     assert isinstance(
         build_artifact_store(Settings(artifact_dir=str(tmp_path))), LocalArtifactStore
     )
+
+
+def _py(code: str) -> list[str]:
+    return [sys.executable, "-c", code]
+
+
+SLEEP = _py("import time; time.sleep(60)")
+
+
+def test_supervisor_stops_mcp_when_the_worker_exits() -> None:
+    started = time.monotonic()
+    code = supervise(SLEEP, _py("raise SystemExit(3)"), dict(os.environ), ready=lambda: True)
+    assert code == 3  # the worker's code, so Render restarts the container
+    assert time.monotonic() - started < 30  # MCP was stopped, not waited out
+
+
+def test_supervisor_stops_the_worker_when_mcp_exits() -> None:
+    mcp = _py("import time; time.sleep(1); raise SystemExit(4)")
+    assert supervise(mcp, SLEEP, dict(os.environ), ready=lambda: True) == 4
+
+
+def test_supervisor_never_starts_the_worker_if_mcp_fails_to_start() -> None:
+    code = supervise(
+        _py("raise SystemExit(5)"),
+        _py("raise SystemExit(0)"),
+        dict(os.environ),
+        ready=lambda: False,
+    )
+    assert code == 5
+
+
+def test_supervisor_gives_up_when_mcp_never_becomes_ready() -> None:
+    code = supervise(
+        SLEEP,
+        _py("raise SystemExit(0)"),
+        dict(os.environ),
+        ready=lambda: False,
+        ready_timeout_s=1.0,
+    )
+    assert code == 1
