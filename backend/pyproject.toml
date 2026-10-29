@@ -1,6 +1,6 @@
 [project]
 name = "alloyiq"
-version = "0.0.1"
+version = "0.1.0+20261030"
 description = "AlloyIQ: AI agent SaaS for metals-trading research (MVP)"
 requires-python = ">=3.12,<3.13"
 authors = [

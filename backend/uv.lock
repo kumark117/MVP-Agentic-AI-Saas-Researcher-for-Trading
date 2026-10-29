@@ -23,7 +23,7 @@ wheels = [
 
 [[package]]
 name = "alloyiq"
-version = "0.0.1"
+version = "0.1.0+20261030"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
