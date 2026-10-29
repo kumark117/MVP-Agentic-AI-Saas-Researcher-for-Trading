@@ -17,7 +17,7 @@ import structlog
 from fastapi import Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from alloyiq.adapters.artifacts import LocalArtifactStore
+from alloyiq.adapters.artifacts import build_artifact_store
 from alloyiq.adapters.payments import DummyPaymentProvider
 from alloyiq.adapters.pg_listen import PgListener
 from alloyiq.application.auth import AuthService, ClientInfo
@@ -100,7 +100,7 @@ def build_services(
     svc.extra["reports"] = ReportService(db)
     svc.extra["exports"] = ExportService(
         db,
-        LocalArtifactStore(settings.artifact_dir),
+        build_artifact_store(settings),
         secret=settings.session_secret.get_secret_value(),
     )
     listener = LazyListener(url)

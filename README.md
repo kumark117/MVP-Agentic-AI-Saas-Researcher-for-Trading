@@ -58,6 +58,16 @@ docker compose exec api alloyiq-admin eval      # 37-case evaluation, offline an
 
 Tests never call paid providers unless `LIVE_PROVIDER_TESTS=1` is set and the owner agrees.
 
+## Deploy (hosted)
+
+Frontend on Vercel (Hobby), backend on Render (`render.yaml`: free API, Postgres and Key Value;
+paid Starter worker), email through Gmail SMTP. Step by step:
+[docs/ops/deploy-render-vercel.md](docs/ops/deploy-render-vercel.md). Differences from the local
+stack are recorded as DV-15 in `docs/deviations.md`.
+
+Project write-ups: `docs/Agentic AI SaaS - Workflows etc.docx` and
+`docs/IntrAI agentic SaaS - processes etc.docx`.
+
 ## Layout
 
 ```

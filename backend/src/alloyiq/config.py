@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     smtp_host: str = "mailpit"
     smtp_port: int = 1025
     email_from: str = "no-reply@alloyiq.local"
+    # Hosted SMTP (e.g. Gmail: smtp.gmail.com:587, STARTTLS, an app password). Mailpit needs none.
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    smtp_starttls: bool = False
 
     # Argon2id cost (D013); tests lower these.
     argon2_time_cost: int = 3
@@ -45,6 +49,9 @@ class Settings(BaseSettings):
     mcp_url: str = "http://mcp:8100/mcp"
     mcp_service_token: SecretStr = SecretStr("dev-mcp-token-change-me")
     mcp_allowed_hosts: list[str] = ["mcp:8100", "localhost:8100", "127.0.0.1:8100"]
+    # "in_process" runs the same five tools inside the worker, for hosts without private
+    # services (Render free tier; DV-15). Validation and policy are identical.
+    tool_gateway: Literal["mcp", "in_process"] = "mcp"
 
     # Data providers. "fixtures" serves SYNTHETIC data only (tests, demos without keys);
     # it is refused in prod.
@@ -69,6 +76,9 @@ class Settings(BaseSettings):
 
     worker_concurrency: int = 2  # jobs executed at once per worker process
     artifact_dir: str = "./data/artifacts"  # local ArtifactStore volume
+    # "postgres" keeps artifact bytes in the artifacts row, for hosts where the api and
+    # worker share no disk (Render; DV-15).
+    artifact_backend: Literal["local", "postgres"] = "local"
     langsmith_api_key: SecretStr | None = None
     langsmith_project: str = "alloyiq-dev"
 
@@ -92,6 +102,8 @@ class Settings(BaseSettings):
             raise RuntimeError(
                 "LLM_MODE=fake (synthetic model output) is not allowed in production"
             )
+        if self.is_prod and not self.public_origin.startswith("https://"):
+            raise RuntimeError("PUBLIC_ORIGIN must be an https:// origin in production")
         if self.is_prod and self.provider_mode == "fixtures":
             raise RuntimeError(
                 "PROVIDER_MODE=fixtures (synthetic data) is not allowed in production"

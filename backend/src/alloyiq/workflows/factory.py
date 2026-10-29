@@ -7,13 +7,13 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from alloyiq.adapters.anthropic_gateway import AnthropicLLMGateway
-from alloyiq.adapters.artifacts import LocalArtifactStore
+from alloyiq.adapters.artifacts import build_artifact_store
 from alloyiq.adapters.pg_listen import asyncpg_dsn
 from alloyiq.application.budget import BudgetService, SpendCaps
 from alloyiq.config import Settings, secret_or_none
 from alloyiq.domain.llm import LLMGateway
 from alloyiq.repositories.db import Database
-from alloyiq.tools.gateway import MCPToolGateway
+from alloyiq.tools.gateway import InProcessToolGateway, MCPToolGateway
 from alloyiq.workflows.graph import ResearchWorkflow
 from alloyiq.workflows.runner import RunExecutor, RunHandle, RunResult
 
@@ -65,7 +65,13 @@ def build_workflow(settings: Settings, db: Database) -> RunExecutor:
         gateway = AnthropicLLMGateway(key)
     if not settings.database_worker_url:
         return UnavailableWorkflow("DATABASE_WORKER_URL is not configured")
-    tools = MCPToolGateway(settings.mcp_url, settings.mcp_service_token.get_secret_value())
+    tools: MCPToolGateway | InProcessToolGateway
+    if settings.tool_gateway == "in_process":
+        from alloyiq.tools.factory import build_tool_service
+
+        tools = InProcessToolGateway(build_tool_service(settings, db))  # DV-15
+    else:
+        tools = MCPToolGateway(settings.mcp_url, settings.mcp_service_token.get_secret_value())
     caps = SpendCaps(
         settings.real_spend_per_run_usd,
         settings.real_spend_account_day_usd,
@@ -74,7 +80,7 @@ def build_workflow(settings: Settings, db: Database) -> RunExecutor:
     return ResearchWorkflow(
         gateway=gateway,
         tool_sessions=tools.session,
-        artifacts=LocalArtifactStore(settings.artifact_dir),
+        artifacts=build_artifact_store(settings),
         budget=BudgetService(caps),
         checkpointer=PostgresCheckpointer(
             checkpoint_dsn(settings.database_worker_url.get_secret_value())

@@ -1,0 +1,122 @@
+# Render Blueprint for the AlloyIQ backend (docs/ops/deploy-render-vercel.md; DV-15).
+# The frontend runs on Vercel and proxies /api/* here, so the browser sees one origin.
+#
+#   api     free web service (sleeps after 15 min idle)
+#   worker  Starter background worker (paid): research runs, email, payments, purge;
+#           runs the five tools in process (no private MCP service on Render free)
+#   db      free Postgres 16 (expires 30 days after creation unless upgraded)
+#   cache   free Key Value (rate limits and caches only; ADR-005)
+#
+# Secrets marked `sync: false` are entered in the Render dashboard, never committed.
+
+envVarGroups:
+  - name: alloyiq-shared
+    envVars:
+      - key: APP_ENV
+        value: prod
+      - key: DEPLOYMENT_VERSION
+        value: render
+      - key: ARTIFACT_BACKEND
+        value: postgres
+      - key: TOOL_GATEWAY
+        value: in_process
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ALLOYIQ_API_DB_PASSWORD
+        generateValue: true
+      - key: ALLOYIQ_WORKER_DB_PASSWORD
+        generateValue: true
+      - key: ALLOYIQ_MIGRATOR_DB_PASSWORD
+        generateValue: true
+
+services:
+  - type: web
+    name: alloyiq-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: >-
+      python -m alloyiq.cli.render exec --
+      uvicorn alloyiq.api.app:create_app --factory --host 0.0.0.0 --port 8000
+      --proxy-headers --forwarded-allow-ips=* --no-access-log
+    healthCheckPath: /api/v1/health/ready
+    envVars:
+      - fromGroup: alloyiq-shared
+      - key: PORT
+        value: "8000"
+      - key: PUBLIC_ORIGIN
+        sync: false  # https://<your-project>.vercel.app
+      - key: DB_HOST
+        fromDatabase: { name: alloyiq-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: alloyiq-db, property: port }
+      - key: DB_NAME
+        fromDatabase: { name: alloyiq-db, property: database }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: alloyiq-cache, property: connectionString }
+
+  - type: worker
+    name: alloyiq-worker
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: python -m alloyiq.cli.render exec -- python -m alloyiq.worker
+    preDeployCommand: python -m alloyiq.cli.render predeploy
+    envVars:
+      - fromGroup: alloyiq-shared
+      - key: PUBLIC_ORIGIN
+        sync: false  # same value as the api
+      - key: DB_HOST
+        fromDatabase: { name: alloyiq-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: alloyiq-db, property: port }
+      - key: DB_NAME
+        fromDatabase: { name: alloyiq-db, property: database }
+      - key: DATABASE_ADMIN_URL  # pre-deploy only: creates the three app roles
+        fromDatabase: { name: alloyiq-db, property: connectionString }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: alloyiq-cache, property: connectionString }
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_STARTTLS
+        value: "true"
+      - key: SMTP_USERNAME
+        sync: false  # your Gmail address
+      - key: SMTP_PASSWORD
+        sync: false  # a Gmail app password (not your Google password)
+      - key: EMAIL_FROM
+        sync: false  # same Gmail address
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ALPHAVANTAGE_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: LANGSMITH_API_KEY
+        sync: false  # optional; leave empty to disable tracing
+      - key: LANGSMITH_PROJECT
+        value: alloyiq-render
+      - key: ENABLE_YAHOO_REFERENCE
+        sync: false  # 1 or 0: Yahoo reference data is a pre-launch licensing blocker
+
+  - type: keyvalue
+    name: alloyiq-cache
+    plan: free
+    region: singapore
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []  # private network only
+
+databases:
+  - name: alloyiq-db
+    plan: free
+    region: singapore
+    postgresMajorVersion: "16"
+    databaseName: alloyiq
+    user: alloyiq_admin
+    ipAllowList: []  # private network only

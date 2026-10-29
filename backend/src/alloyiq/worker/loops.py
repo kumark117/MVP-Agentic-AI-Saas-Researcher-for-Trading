@@ -6,7 +6,7 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
-from alloyiq.adapters.artifacts import LocalArtifactStore
+from alloyiq.adapters.artifacts import build_artifact_store
 from alloyiq.adapters.email import SmtpEmailSender
 from alloyiq.adapters.payments import DummyPaymentProvider
 from alloyiq.adapters.pg_listen import PgListener
@@ -19,7 +19,7 @@ from alloyiq.application.purge import PurgeService
 from alloyiq.application.recovery import RecoverySweeper
 from alloyiq.application.settlement import SettlementService
 from alloyiq.application.wallet import WalletService
-from alloyiq.config import Settings
+from alloyiq.config import Settings, secret_or_none
 from alloyiq.repositories.db import Database
 from alloyiq.repositories.runs import CANCEL_CHANNEL, JOBS_CHANNEL
 from alloyiq.security.ratelimit import InMemoryRateLimiter
@@ -70,7 +70,15 @@ def build_worker(settings: Settings, worker_id: str) -> WorkerParts:
     url = settings.database_worker_url.get_secret_value()
     db = Database(url, pool_size=10)
     email = EmailDispatcher(
-        db, SmtpEmailSender(settings.smtp_host, settings.smtp_port, settings.email_from)
+        db,
+        SmtpEmailSender(
+            settings.smtp_host,
+            settings.smtp_port,
+            settings.email_from,
+            username=settings.smtp_username,
+            password=secret_or_none(settings.smtp_password),
+            starttls=settings.smtp_starttls,
+        ),
     )
     wallet, billing = build_billing(settings, db)
     lifecycle = build_lifecycle(settings, wallet)
@@ -84,7 +92,7 @@ def build_worker(settings: Settings, worker_id: str) -> WorkerParts:
         concurrency=settings.worker_concurrency,
     )
     sweeper = RecoverySweeper(db, lifecycle)
-    artifacts = LocalArtifactStore(settings.artifact_dir)
+    artifacts = build_artifact_store(settings)
     exports = ExportService(db, artifacts, secret=settings.session_secret.get_secret_value())
     purge = PurgeService(db, lifecycle, artifacts)
 

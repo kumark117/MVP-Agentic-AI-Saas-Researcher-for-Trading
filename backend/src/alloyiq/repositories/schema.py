@@ -1174,7 +1174,7 @@ export_jobs = _table(
 artifacts = _table(
     "artifacts",
     "activity_90d",
-    "object references (local ArtifactStore in MVP)",
+    "object references; bytes on a local volume or in content (DV-15)",
     _id(),
     _account(),
     sa.Column("key", sa.Text, nullable=False),
@@ -1182,6 +1182,8 @@ artifacts = _table(
     sa.Column("size_bytes", sa.BigInteger, nullable=False),
     sa.Column("content_type", sa.Text, nullable=False),
     sa.Column("retention_class", sa.Text, nullable=False),
+    # Bytes for the Postgres ArtifactStore (0006; DV-15); NULL with the local store.
+    sa.Column("content", sa.LargeBinary),
     _created(),
     _ts("deleted_at"),
     sa.UniqueConstraint("key"),

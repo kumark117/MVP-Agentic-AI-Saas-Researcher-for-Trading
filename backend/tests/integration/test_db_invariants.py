@@ -104,9 +104,9 @@ async def test_postings_and_journals_are_immutable(
 
 
 async def test_duplicate_business_event_rejected(api_db: Database, tenant_a: Tenant) -> None:
-    tid = uuid.uuid4()
+    tid, event = uuid.uuid4(), f"dup:{uuid.uuid4()}"  # unique per run: no reset needed
     async with api_db.transaction(_ctx(tenant_a)) as c:
-        await c.execute(TXN, {"id": tid, "a": tenant_a.account_id, "b": "dup:event"})
+        await c.execute(TXN, {"id": tid, "a": tenant_a.account_id, "b": event})
         await c.execute(
             POST,
             {
@@ -129,7 +129,7 @@ async def test_duplicate_business_event_rejected(api_db: Database, tenant_a: Ten
         )
     with pytest.raises(IntegrityError):
         async with api_db.transaction(_ctx(tenant_a)) as c:
-            await c.execute(TXN, {"id": uuid.uuid4(), "a": tenant_a.account_id, "b": "dup:event"})
+            await c.execute(TXN, {"id": uuid.uuid4(), "a": tenant_a.account_id, "b": event})
 
 
 async def test_wallet_cannot_go_negative(api_db: Database, tenant_a: Tenant) -> None:

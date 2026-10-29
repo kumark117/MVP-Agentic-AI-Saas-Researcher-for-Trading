@@ -117,7 +117,7 @@ class PurgeService:
         rows = (
             await conn.execute(
                 text(
-                    "UPDATE artifacts SET deleted_at = now() WHERE deleted_at IS NULL AND ("
+                    "UPDATE artifacts SET deleted_at = now(), content = NULL WHERE deleted_at IS NULL AND ("
                     " (retention_class = 'ephemeral_7d' AND created_at < now() - interval '7 days')"
                     " OR (retention_class = 'activity_90d' AND created_at < now() - interval '90 days'))"
                     " RETURNING sha256"
@@ -198,7 +198,7 @@ class PurgeService:
                 ("export_jobs", "UPDATE export_jobs SET status = 'expired' WHERE account_id = :a"),
                 (
                     "artifacts",
-                    "UPDATE artifacts SET deleted_at = now() WHERE account_id = :a"
+                    "UPDATE artifacts SET deleted_at = now(), content = NULL WHERE account_id = :a"
                     " AND deleted_at IS NULL",
                 ),
                 ("email_outbox", "DELETE FROM email_outbox WHERE account_id = :a"),

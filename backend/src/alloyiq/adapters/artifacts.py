@@ -14,6 +14,8 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from alloyiq.config import Settings
+
 
 class ArtifactStore(Protocol):
     async def put(
@@ -100,3 +102,55 @@ class LocalArtifactStore:
         if data is None or hashlib.sha256(data).hexdigest() != sha:
             return None  # missing or tampered: never trust it
         return data
+
+
+class PgArtifactStore:
+    """Artifact bytes in the `artifacts` row itself (migration 0006), for hosts where the
+    api and worker share no disk (Render; DV-15). Rows keep the same RLS as metadata, and
+    the purge clears `content` when it marks a row deleted."""
+
+    async def put(
+        self,
+        conn: AsyncConnection,
+        *,
+        account_id: UUID,
+        key: str,
+        data: bytes,
+        content_type: str,
+        retention_class: str = "activity_90d",
+    ) -> str:
+        await conn.execute(
+            text(
+                "INSERT INTO artifacts (account_id, key, sha256, size_bytes, content_type,"
+                " retention_class, content) VALUES (:a, :k, :s, :n, :c, :r, :d)"
+                " ON CONFLICT (key) DO NOTHING"
+            ),
+            {
+                "a": account_id,
+                "k": key,
+                "s": hashlib.sha256(data).hexdigest(),
+                "n": len(data),
+                "c": content_type,
+                "r": retention_class,
+                "d": data,
+            },
+        )
+        return key
+
+    async def get(self, conn: AsyncConnection, key: str) -> bytes | None:
+        row = (
+            await conn.execute(
+                text("SELECT sha256, content FROM artifacts WHERE key = :k AND deleted_at IS NULL"),
+                {"k": key},
+            )
+        ).one_or_none()
+        if row is None or row.content is None:
+            return None
+        data = bytes(row.content)
+        return data if hashlib.sha256(data).hexdigest() == row.sha256 else None
+
+
+def build_artifact_store(settings: Settings) -> ArtifactStore:
+    if settings.artifact_backend == "postgres":
+        return PgArtifactStore()
+    return LocalArtifactStore(settings.artifact_dir)

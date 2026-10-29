@@ -18,6 +18,9 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY src ./src
 RUN uv sync --frozen --no-dev
+# Migrations ship in the image so hosted deploys (Render pre-deploy) can run Alembic.
+COPY alembic.ini ./
+COPY migrations ./migrations
 
 # The artifacts volume inherits this ownership when it is first created.
 RUN mkdir -p /app/data/artifacts && chown -R alloyiq:alloyiq /app/data
