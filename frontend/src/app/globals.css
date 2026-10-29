@@ -1,13 +1,17 @@
 @import "tailwindcss";
 
+/* App theme: green background, blue text. Both pairs meet WCAG AA contrast (about 9:1). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #dcf5dc;
+  --foreground: #0b3d91;
+  --hover: #c3ebc3;
+  color-scheme: light;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-hover: var(--hover);
   /* System font stack: no third-party font fetch (keeps a strict CSP simple). */
   --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
@@ -15,8 +19,10 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0b2e1a;
+    --foreground: #bfdbfe;
+    --hover: #134027;
+    color-scheme: dark;
   }
 }
 

@@ -14,7 +14,7 @@ export function Button({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "danger" }) {
   const styles = {
     primary: "bg-blue-700 text-white hover:bg-blue-800 disabled:bg-blue-300",
-    secondary: "border border-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
+    secondary: "border border-gray-400 hover:bg-hover",
     danger: "bg-red-700 text-white hover:bg-red-800 disabled:bg-red-300",
   }[variant];
   return (

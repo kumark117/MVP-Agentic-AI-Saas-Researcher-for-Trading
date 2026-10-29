@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 
@@ -8,6 +8,14 @@ import { Providers } from "./providers";
 export const metadata: Metadata = {
   title: "AlloyIQ",
   description: "AI research for metals markets. Research only; payments are simulated.",
+};
+
+// Browser UI colour (mobile address bar, installed-app title bar) matches the green theme.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#dcf5dc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b2e1a" },
+  ],
 };
 
 // The CSP nonce (src/proxy.ts) is applied during dynamic rendering, so every request
@@ -23,7 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:bg-white focus:p-2 focus:text-black"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:border focus:border-foreground focus:bg-background focus:p-2 focus:text-foreground"
         >
           Skip to main content
         </a>
