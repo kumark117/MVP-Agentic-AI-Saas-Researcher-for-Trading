@@ -70,6 +70,15 @@ def _with_urls() -> dict[str, str]:
     return env
 
 
+def role_statement(exists: bool) -> str:
+    """CREATE sets the safe attributes once. ALTER touches only LOGIN and the password:
+    naming SUPERUSER or BYPASSRLS at all, even to keep them off, needs a superuser, and
+    Render's admin user is not one."""
+    if exists:
+        return "ALTER ROLE {} WITH LOGIN PASSWORD {}"
+    return "CREATE ROLE {} LOGIN PASSWORD {} NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS"
+
+
 def bootstrap(admin_url: str, env: dict[str, str]) -> None:
     import psycopg
     from psycopg import sql
@@ -80,11 +89,10 @@ def bootstrap(admin_url: str, env: dict[str, str]) -> None:
         for role, var in ROLES.items():
             pw = _need(var, env)
             exists = conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (role,)).fetchone()
-            verb = "ALTER" if exists else "CREATE"
             conn.execute(
-                sql.SQL(
-                    "{} ROLE {} LOGIN PASSWORD {} NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS"
-                ).format(sql.SQL(verb), sql.Identifier(role), sql.Literal(pw))
+                sql.SQL(role_statement(exists is not None)).format(
+                    sql.Identifier(role), sql.Literal(pw)
+                )
             )
             print(f"role {role}: {'updated' if exists else 'created'}")
         ident = sql.Identifier(db)

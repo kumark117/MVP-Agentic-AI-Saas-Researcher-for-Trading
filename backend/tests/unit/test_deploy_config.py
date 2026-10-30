@@ -13,7 +13,7 @@ from pydantic import SecretStr
 
 from alloyiq.adapters.artifacts import LocalArtifactStore, PgArtifactStore, build_artifact_store
 from alloyiq.adapters.email import OutgoingEmail, SmtpEmailSender
-from alloyiq.cli.render import role_urls, supervise
+from alloyiq.cli.render import role_statement, role_urls, supervise
 from alloyiq.config import Settings
 
 ENV = {
@@ -141,3 +141,12 @@ def test_supervisor_gives_up_when_mcp_never_becomes_ready() -> None:
         ready_timeout_s=1.0,
     )
     assert code == 1
+
+
+def test_role_bootstrap_never_names_superuser_attributes_on_alter() -> None:
+    # Render's admin is not a superuser: ALTER ROLE ... NOSUPERUSER fails even as a no-op.
+    alter = role_statement(exists=True)
+    assert "PASSWORD" in alter
+    assert not any(a in alter for a in ("SUPERUSER", "BYPASSRLS", "CREATEROLE", "CREATEDB"))
+    create = role_statement(exists=False)
+    assert "NOSUPERUSER" in create and "NOBYPASSRLS" in create
