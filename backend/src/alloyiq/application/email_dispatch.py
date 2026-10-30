@@ -34,6 +34,10 @@ def render(template: str, payload: dict[str, Any]) -> tuple[str, str]:
             f"open:\n\n{payload['link']}\n\nThe link expires in 30 minutes. Resetting signs "
             "out every device. If it was not you, ignore this email." + _FOOTER,
         )
+    if template == "owner_digest":
+        from alloyiq.application.owner_digest import render_digest
+
+        return render_digest(payload)
     if template == "account_exists":
         return (
             "Your AlloyIQ account",

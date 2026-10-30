@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     smtp_username: str | None = None
     smtp_password: SecretStr | None = None
     smtp_starttls: bool = False
+    # Hourly digest of sign-ups and research runs to the owner; empty disables it.
+    owner_alert_email: str | None = None
+    owner_alert_timezone: str = "Asia/Kolkata"
 
     # Argon2id cost (D013); tests lower these.
     argon2_time_cost: int = 3

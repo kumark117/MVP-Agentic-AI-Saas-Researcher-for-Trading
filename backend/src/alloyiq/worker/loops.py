@@ -15,6 +15,7 @@ from alloyiq.application.budget import BudgetService, SpendCaps
 from alloyiq.application.email_dispatch import EmailDispatcher
 from alloyiq.application.exports import ExportService
 from alloyiq.application.lifecycle import RunLifecycle
+from alloyiq.application.owner_digest import OwnerDigestService
 from alloyiq.application.purge import PurgeService
 from alloyiq.application.recovery import RecoverySweeper
 from alloyiq.application.settlement import SettlementService
@@ -95,6 +96,11 @@ def build_worker(settings: Settings, worker_id: str) -> WorkerParts:
     artifacts = build_artifact_store(settings)
     exports = ExportService(db, artifacts, secret=settings.session_secret.get_secret_value())
     purge = PurgeService(db, lifecycle, artifacts)
+    owner_email = (settings.owner_alert_email or "").strip()
+    optional: list[Loop] = []
+    if owner_email and not owner_email.startswith("#"):
+        digest = OwnerDigestService(db, owner_email, settings.owner_alert_timezone)
+        optional.append(("owner_digest", digest.run_once, 300.0))  # sends at most hourly
 
     async def jobs(stop: asyncio.Event) -> None:
         await listener.start()
@@ -109,6 +115,7 @@ def build_worker(settings: Settings, worker_id: str) -> WorkerParts:
             ("recovery_sweeper", sweeper.sweep, 15.0),
             ("exports", exports.process_pending, 2.0),
             ("retention_purge", purge.run_once, 3600.0),
+            *optional,
         ],
         daemons=[("jobs", jobs)],
         cleanup=[listener.stop, db.dispose],

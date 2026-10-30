@@ -18,6 +18,14 @@ docker compose exec api alloyiq-admin <command>     # uses DATABASE_MIGRATOR_URL
 | Queue | `alloyiq-admin summary` → `runs_by_status.queued` | small; queued runs time out after 5 min by design |
 | Evaluation | `alloyiq-admin eval` (offline, synthetic) | `release_gates_passed: true` |
 
+## Owner digest (sign-ups and runs)
+
+With `OWNER_ALERT_EMAIL` set, the worker emails an hourly digest of new sign-ups and finished
+research runs (member email, instrument, horizon, result, real cost, duration; never questions
+or report text). Quiet hours send nothing. Each covered window is recorded in `audit_events`
+(`owner_digest.sent` / `owner_digest.empty`), which is also where the next digest starts, so a
+worker outage delays activity but never skips it: `alloyiq-admin audit --action owner_digest`.
+
 ## Provider outage (Claude, Alpha Vantage, Tavily, Yahoo)
 
 Symptoms: runs end `incomplete` with NO_SIGNAL, or `failed` with `PROVIDER_UNAVAILABLE`;

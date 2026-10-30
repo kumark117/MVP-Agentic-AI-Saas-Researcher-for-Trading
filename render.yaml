@@ -94,6 +94,8 @@ services:
         sync: false  # a Gmail app password (not your Google password)
       - key: EMAIL_FROM
         sync: false  # same Gmail address
+      - key: OWNER_ALERT_EMAIL
+        sync: false  # hourly digest of sign-ups and runs; leave empty to disable
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: ALPHAVANTAGE_API_KEY
