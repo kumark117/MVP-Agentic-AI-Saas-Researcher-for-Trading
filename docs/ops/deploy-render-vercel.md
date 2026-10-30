@@ -2,7 +2,7 @@
 
 ```
 browser ──► https://<project>.vercel.app ──(/api/* rewrite)──► https://alloyiq-api.onrender.com
-                 Next.js (Vercel)                                 FastAPI (Render free web)
+                 Next.js (Vercel)                                 FastAPI (Render Starter web)
                                                                   worker + MCP tools (Render Starter, paid)
                                                                   Postgres 16 (Render free)
                                                                   Key Value (Render free)
@@ -16,7 +16,7 @@ cookies stay first-party. What differs from the local stack is recorded as DV-15
 | Part | Plan | Notes |
 |---|---|---|
 | Frontend | Vercel Hobby (free) | Personal, non-commercial use only |
-| API | Render free web service | Sleeps after 15 min idle; the first request then takes up to about a minute |
+| API | Render Starter (paid, about USD 7/month) | Always on. On the free plan it sleeps after 15 min idle and the next visitor waits about a minute or more (seen in practice: the page sits on "Loading your account...") |
 | Worker | Render Starter (paid, about USD 7/month) | Always on; also runs the MCP tool server on localhost |
 | Postgres | Render free | 1 GB; **expires 30 days after creation** (14-day grace) unless upgraded |
 | Key Value | Render free | In-memory only, which is fine (ADR-005) |

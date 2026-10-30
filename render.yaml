@@ -1,7 +1,8 @@
 # Render Blueprint for the AlloyIQ backend (docs/ops/deploy-render-vercel.md; DV-15).
 # The frontend runs on Vercel and proxies /api/* here, so the browser sees one origin.
 #
-#   api     free web service (sleeps after 15 min idle)
+#   api     Starter web service (paid; a free one sleeps after 15 min idle and the first
+#           request then hangs for about a minute)
 #   worker  Starter background worker (paid): research runs, email, payments, purge.
 #           The MCP tool server runs in the same container on 127.0.0.1:8100
 #           (`alloyiq.cli.render worker`), since Render free has no private services
@@ -32,7 +33,7 @@ services:
   - type: web
     name: alloyiq-api
     runtime: docker
-    plan: free
+    plan: starter
     region: singapore
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend

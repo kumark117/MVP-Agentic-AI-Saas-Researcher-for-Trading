@@ -60,8 +60,8 @@ Tests never call paid providers unless `LIVE_PROVIDER_TESTS=1` is set and the ow
 
 ## Deploy (hosted)
 
-Frontend on Vercel (Hobby), backend on Render (`render.yaml`: free API, Postgres and Key Value;
-paid Starter worker), email through Gmail SMTP. Step by step:
+Frontend on Vercel (Hobby), backend on Render (`render.yaml`: Starter API and worker;
+free Postgres and Key Value), email through Gmail SMTP. Step by step:
 [docs/ops/deploy-render-vercel.md](docs/ops/deploy-render-vercel.md). Differences from the local
 stack are recorded as DV-15 in `docs/deviations.md`.
 
