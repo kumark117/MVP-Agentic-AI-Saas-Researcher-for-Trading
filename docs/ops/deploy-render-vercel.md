@@ -32,7 +32,9 @@ cookies stay first-party. What differs from the local stack is recorded as DV-15
 ## 2. Vercel (frontend)
 
 1. <https://vercel.com/new>, sign in with GitHub, import the repository.
-2. **Root Directory:** `frontend`. Framework: Next.js (detected).
+2. **Root Directory:** `frontend` (required: with the GitHub integration, a push to `main`
+   deploys production, and a build from the repo root deploys an empty site that returns 404
+   everywhere). `frontend/vercel.json` pins Next.js and pnpm 12.15.0 for install and build.
 3. **Environment variables:**
    - `API_ORIGIN` = `https://alloyiq-api.onrender.com` (the Render API URL from step 3; if the
      name is taken, Render shows the real URL; update this and redeploy)
