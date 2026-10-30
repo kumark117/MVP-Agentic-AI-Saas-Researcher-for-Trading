@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
-import { Suspense, type ReactNode } from "react";
 
 import "./globals.css";
 import { Providers } from "./providers";
@@ -18,14 +17,12 @@ export const viewport: Viewport = {
   ],
 };
 
-// The CSP nonce (src/proxy.ts) is applied during dynamic rendering, so every request
-// renders on the server; the app's data is fetched client-side with TanStack Query.
-async function Dynamic({ children }: { children: ReactNode }) {
+// Every page must render per request: Next.js adds the CSP nonce (src/proxy.ts) only to
+// scripts it renders with a request. A prerendered static shell (Partial Prerendering /
+// Cache Components) carries no nonce, so the browser blocks its scripts and the app never
+// starts. Data is fetched client-side with TanStack Query, so nothing is lost.
+export default async function RootLayout({ children }: LayoutProps<"/">) {
   await connection();
-  return <Providers>{children}</Providers>;
-}
-
-export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
@@ -35,9 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to main content
         </a>
-        <Suspense fallback={null}>
-          <Dynamic>{children}</Dynamic>
-        </Suspense>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

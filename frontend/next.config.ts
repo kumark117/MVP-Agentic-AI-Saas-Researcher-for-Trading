@@ -10,8 +10,8 @@ const nextConfig: NextConfig = {
       return [{ source: "/api/:path*", destination: `${apiOrigin}/api/:path*` }];
     },
   }),
-  cacheComponents: true,
-  partialPrefetching: true,
+  // No Cache Components / Partial Prerendering: a prerendered shell cannot carry the
+  // per-request CSP nonce (ADR-017).
   poweredByHeader: false,
   turbopack: {
     rules: {

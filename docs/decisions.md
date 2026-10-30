@@ -397,9 +397,13 @@ From build prompt §21, plus anything found while building.
 
 - **Rendering:** route pages are thin server components that render client features.
   Data is fetched in the browser with TanStack Query over `openapi-fetch` typed from the
-  committed contract. Next 16 Cache Components is on: the root layout renders dynamically
-  (`connection()` inside Suspense) so each request gets a CSP nonce, and routes that read
-  params wrap their client view in Suspense.
+  committed contract. Every route renders per request: the root layout awaits
+  `connection()` and Cache Components / Partial Prerendering are off, because Next.js puts
+  the CSP nonce only on scripts it renders with a request. (Amended 2026-10-30: the first
+  hosted build had Cache Components on, with `connection()` inside Suspense; its prerendered
+  shell had no nonce on the main chunks, so the browser blocked them and every page stayed
+  on "Loading your account...". `frontend/scripts/check-csp-nonce.mjs` now checks a running
+  production build.) Routes that read params wrap their client view in Suspense.
 - **CSP:** `src/proxy.ts` sends a per-request nonce policy (`script-src 'self'
   'nonce-…' 'strict-dynamic'`, `style-src 'self' 'nonce-…'`, `connect-src 'self'`,
   `frame-ancestors 'none'`, `object-src 'none'`), plus `Referrer-Policy: no-referrer`

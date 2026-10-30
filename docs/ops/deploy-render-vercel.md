@@ -75,6 +75,8 @@ builds the role database URLs from the Blueprint's variables.
 
 ## 5. Check
 
+0. `node frontend/scripts/check-csp-nonce.mjs https://<project>.vercel.app` must print `ok` for
+   every page. A `FAIL` means scripts lack the CSP nonce and the browser will block them.
 1. Open the Vercel URL, register, and find the verification email in your inbox (or spam).
 2. Run one research run and watch the live progress.
 3. `alloyiq-admin summary` from the worker shell shows real spend against the caps.
@@ -88,5 +90,6 @@ builds the role database URLs from the Blueprint's variables.
 | No verification email | Wrong app password, or 2-Step Verification is off; see the worker logs |
 | `PUBLIC_ORIGIN must be an https:// origin` at start | It's set to `http://` |
 | Database disappears after about 30 days | Render free Postgres expired; upgrade it before then |
+| Page stays on "Loading your account..." and the API logs show no `/me` request | Scripts blocked by the CSP: run the nonce check above; pages must render per request (ADR-017) |
 | Live progress stream reconnects during a run | Expected through the proxy: the client resumes from its last event |
 | Worker logs `mcp did not become ready` | The MCP server failed to start; its error is in the lines just above |
