@@ -39,6 +39,11 @@ HEARTBEAT_S = 15.0
 SESSION_CHECK_S = 10.0
 POLL_S = 2.0
 MAX_BUFFER_EVENTS = 100
+# A stream ends after this long and the client reconnects from its Last-Event-ID, missing
+# nothing. Behind a proxy that keeps the upstream open after the browser leaves (Vercel
+# rewrites), the API never sees the disconnect; without a cap such streams would hold the
+# member's 3-stream limit forever and every new page would get 429 (DV-13).
+MAX_STREAM_S = 60.0
 
 
 def parse_cursor(raw: str | None, scope_id: UUID) -> int:
@@ -107,12 +112,14 @@ class StreamService:
         heartbeat_s: float = HEARTBEAT_S,
         session_check_s: float = SESSION_CHECK_S,
         poll_s: float = POLL_S,
+        max_stream_s: float = MAX_STREAM_S,
     ) -> None:
         self.db = db
         self.listener_factory = listener_factory
         self.heartbeat_s = heartbeat_s
         self.session_check_s = session_check_s
         self.poll_s = poll_s
+        self.max_stream_s = max_stream_s
         self._open: dict[UUID, int] = defaultdict(int)  # per-account concurrent streams
 
     async def prepare(
@@ -194,6 +201,7 @@ class StreamService:
             yield ": connected\n\n"
             next_beat = time.monotonic() + self.heartbeat_s
             next_check = time.monotonic() + self.session_check_s
+            end_at = time.monotonic() + self.max_stream_s
             while True:
                 if sub is not None and sub.overflowed:
                     # The client fell >100 notifications behind: tell it to resync from a
@@ -218,6 +226,8 @@ class StreamService:
                 if finished or (plan.terminal_at_open and plan.scope == "run"):
                     return  # D090: close after run.finished once replay is done
                 now = time.monotonic()
+                if now >= end_at:
+                    return  # lifetime cap: the client resumes from its Last-Event-ID
                 if now >= next_check:
                     next_check = now + self.session_check_s
                     if not await session_active():
@@ -225,7 +235,7 @@ class StreamService:
                 if now >= next_beat:
                     next_beat = now + self.heartbeat_s
                     yield ": heartbeat\n\n"
-                wait = max(0.05, min(next_beat, next_check) - time.monotonic())
+                wait = max(0.05, min(next_beat, next_check, end_at) - time.monotonic())
                 wait = min(wait, self.poll_s)
                 if sub is not None:
                     await sub.get(wait)

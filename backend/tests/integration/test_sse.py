@@ -239,3 +239,35 @@ async def test_revoked_session_closes_stream_and_limit_is_enforced(
     await asyncio.wait_for(asyncio.gather(*(drain(g) for g in gens)), 5)  # well within 15 s
     # Closed streams free their slots.
     await svc.prepare(scope="account", scope_id=t.account_id, account_id=t.account_id, cursor=None)
+
+
+async def test_stream_ends_at_its_lifetime_and_frees_the_slot(
+    live: tuple[Database, PgListener], migrator: Engine
+) -> None:
+    # Behind Vercel's rewrite the API never sees the browser leave; the lifetime cap is
+    # what releases the member's slot (DV-13).
+    db, listener = live
+    t = make_tenant(migrator)
+
+    async def get() -> PgListener:
+        return listener
+
+    async def active() -> bool:
+        return True
+
+    svc = StreamService(db, get, poll_s=0.1, heartbeat_s=60, max_stream_s=0.5)
+    gens = []
+    for _ in range(3):
+        plan = await svc.prepare(
+            scope="account", scope_id=t.account_id, account_id=t.account_id, cursor=None
+        )
+        g = svc.stream(plan, active)
+        await anext(g)
+        gens.append(g)
+
+    async def drain(g: AsyncIterator[str]) -> None:
+        async for _ in g:
+            pass
+
+    await asyncio.wait_for(asyncio.gather(*(drain(g) for g in gens)), 5)  # ends by itself
+    await svc.prepare(scope="account", scope_id=t.account_id, account_id=t.account_id, cursor=None)
