@@ -18,6 +18,13 @@ docker compose exec api alloyiq-admin <command>     # uses DATABASE_MIGRATOR_URL
 | Queue | `alloyiq-admin summary` → `runs_by_status.queued` | small; queued runs time out after 5 min by design |
 | Evaluation | `alloyiq-admin eval` (offline, synthetic) | `release_gates_passed: true` |
 
+## Finding a member
+
+`alloyiq-admin accounts` lists members newest first (account ID, email, status, verified,
+joined, runs, last run); `--email gmail.com` filters by any part of the address. The other
+commands (`runs`, `audit`, `suspend`, `grant-credit`) take the account ID it prints. Each
+lookup is audited as `admin.accounts_listed` without the search text.
+
 ## Owner digest (sign-ups and runs)
 
 With `OWNER_ALERT_EMAIL` set, the worker emails an hourly digest of new sign-ups and finished

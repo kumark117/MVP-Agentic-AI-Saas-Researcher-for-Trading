@@ -1,8 +1,10 @@
 # ruff: noqa: E501 - SQL kept on readable single lines
-"""alloyiq-admin operations commands: summary, runs, audit, suspend (section 17; DV-02, DV-05).
+"""alloyiq-admin operations commands: summary, accounts, runs, audit, suspend (section 17;
+DV-02, DV-05).
 
 The platform summary is CLI-only in the MVP (no privileged HTTP surface). Output never
-includes emails, prompts or report text: accounts are shown by ID and pseudonym.
+includes prompts or report text, and accounts are shown by ID; only `accounts` shows
+emails, the owner's lookup from an email to an account ID.
 """
 
 from __future__ import annotations
@@ -102,6 +104,48 @@ async def summary(db: Database, ns: argparse.Namespace) -> int:
             "open_incidents": {k: n for k, n in incidents},
         }
     )
+    return 0
+
+
+def _accounts_args(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--email", help="case-insensitive part of the email, e.g. gmail.com")
+    p.add_argument("--limit", type=int, default=100)
+
+
+@command(
+    "accounts",
+    "List members (or find one by --email): account ID, status, verified, joined, runs",
+    _accounts_args,
+)
+async def accounts(db: Database, ns: argparse.Namespace) -> int:
+    """The owner's lookup from an email (e.g. from the hourly digest) to the account ID the
+    other commands take. Shows emails by the owner's choice (2026-10-30); every lookup is
+    audited without the search text."""
+    async with db.transaction(DbContext.for_system()) as c:
+        rows = (
+            await c.execute(
+                text(
+                    "SELECT a.id AS account_id, u.email, u.status AS user_status, a.status AS account_status,"
+                    " u.email_verified_at IS NOT NULL AS verified, u.created_at AS joined,"
+                    " (SELECT count(*) FROM research_runs r WHERE r.account_id = a.id) AS runs,"
+                    " (SELECT max(r.submitted_at) FROM research_runs r WHERE r.account_id = a.id) AS last_run"
+                    " FROM users u LEFT JOIN accounts a ON a.owner_user_id = u.id"
+                    " WHERE (CAST(:e AS text) IS NULL OR u.email ILIKE '%' || :e || '%')"
+                    " ORDER BY u.created_at DESC LIMIT :n"
+                ),
+                {"e": ns.email, "n": ns.limit},
+            )
+        ).all()
+        await audit(
+            c,
+            action="admin.accounts_listed",
+            outcome="applied",
+            account_id=None,
+            actor_kind="admin_cli",
+            target_type="account",
+            metadata={"filtered": ns.email is not None, "count": len(rows)},
+        )
+    _out([dict(r._mapping) for r in rows])
     return 0
 
 
